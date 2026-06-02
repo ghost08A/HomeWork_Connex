@@ -1,0 +1,120 @@
+<div [class]="layout === 'row' 
+    ? 'flex flex-row items-center gap-4 w-full' 
+    : labelPosition === 'bottom' ? 'flex flex-col-reverse w-full' : 'w-full'">
+  <div class="flex flex-row justify-between">
+  @if (label) {
+  <label [style.font-size.px]="fontSize" [class]="layout === 'row' 
+        ? 'whitespace-nowrap lyt-label' 
+        : labelPosition === 'bottom' 
+            ? 'block mt-1 lyt-label' 
+            : 'block mb-1 lyt-label'">
+    {{ label }}
+    @if (isRequired) {
+    <span class="text-red-500">*</span>
+    }
+  </label>
+
+  }
+  </div>
+  
+  @switch (type) {
+
+  @case ('Text') {
+  <dx-text-box [disabled]="isDisabled" [maxLength]="max ?? ''" [value]="uiValue" [showClearButton]="true"
+    [inputAttr]="{ autocomplete: 'off' }" (onValueChanged)="onValueChange($event.value) " [placeholder]="placeholder">
+  </dx-text-box>
+  }
+
+  @case ('Password') {
+  <dx-text-box [disabled]="isDisabled" [maxLength]="max ?? ''" [value]="uiValue" [showClearButton]="true"
+    mode="password" [inputAttr]="{ autocomplete: 'off' }" (onValueChanged)="onValueChange($event.value) "
+    [placeholder]="placeholder">
+  </dx-text-box>
+  }
+
+  @case ('TextArea') {
+  <dx-text-area [maxLength]="max ?? ''" [disabled]="isDisabled" [value]="uiValue" [placeholder]="placeholder"
+    [height]="90" (onValueChanged)="onValueChange($event.value)">
+  </dx-text-area>
+  }
+
+  @case ('Email') {
+  <dx-text-box [maxLength]="max ?? ''" [id]="testId + '-input'" mode="email" [placeholder]="placeholder"
+    [disabled]="isDisabled" [value]="uiValue" [showClearButton]="true" (onValueChanged)="onValueChange($event.value)">
+  </dx-text-box>
+  }
+
+  @case ('Number') {
+  <dx-number-box [min]="min ?? undefined" [max]="max ?? undefined" [placeholder]="placeholder" [disabled]="isDisabled"
+    [value]="uiValue" (onValueChanged)="onValueChange($event.value)">
+  </dx-number-box>
+  }
+
+  @case ('Phone') {
+  <dx-text-box [disabled]="isDisabled" [value]="phoneDisplay" [showClearButton]="true" [placeholder]="placeholder"
+    [inputAttr]="{ type: 'tel', inputmode: 'numeric', maxlength: '12', 'data-testid': testId || null }"
+    (onInput)="onPhoneInput($event.event)" (onValueChanged)="onPhoneClear($event.value)">
+  </dx-text-box>
+  }
+
+  @case ('Date') {
+  <dx-date-box [min]="minDate" [max]="maxDate" [disabled]="isDisabled" class="loyalty-date" pickerType="rollers"
+    type="date" [value]="uiValue || null" [displayFormat]="'dd MMM yyyy'" [showClearButton]="true"
+    [placeholder]="placeholder" (onValueChanged)="onValueChange($event.value)">
+  </dx-date-box>
+  }
+
+  @case ('DateTime') {
+  <dx-date-box [min]="minDate" [max]="maxDate" [disabled]="isDisabled" class="loyalty-date" pickerType="rollers"
+    type="datetime" [value]="uiValue || null" [displayFormat]="'dd MMM yyyy, HH:mm'" [placeholder]="placeholder"
+    [showClearButton]="true" (onValueChanged)="onValueChange($event.value)">
+  </dx-date-box>
+  }
+
+  @case ('DropDown') {
+  <dx-select-box [dataSource]="dropdownDs" [displayExpr]="displayExpr" [valueExpr]="valueExpr" [value]="uiValue"
+    [disabled]="isDisabled" [placeholder]="placeholder || 'Select...'" (onValueChanged)="onValueChange($event.value)">
+  </dx-select-box>
+  }
+
+  @case ('Checkbox') {
+    @if (dropdownDs && dropdownDs.length > 0) {
+    <div class="flex flex-col gap-2">
+      @for (option of dropdownDs; track $index) {
+      <dx-check-box [disabled]="isDisabled" [text]="$any(option).value || option"
+        [value]="isOptionSelected($any(option).key || option)"
+        (onValueChanged)="onMultiOptionChange($any(option).key || option, $any($event).value)">
+      </dx-check-box>
+      }
+    </div>
+    } @else {
+    <dx-check-box [disabled]="isDisabled" [value]="uiValue" [text]="placeholder"
+      (onValueChanged)="onValueChange($any($event).value)">
+    </dx-check-box>
+    }
+  }
+  
+  @case ('Search') {
+  <dx-text-box [disabled]="isDisabled" [maxLength]="max ?? ''" [value]="uiValue" [showClearButton]="true"
+    [inputAttr]="{ autocomplete: 'off' }" (onValueChanged)="onValueChange($event.value)" [placeholder]="placeholder">
+    <dxi-button name="searchIcon" location="before" [options]="{
+      icon: 'search',
+      stylingMode: 'text',
+      disabled: true
+    }">
+    </dxi-button>
+  </dx-text-box>
+  }
+  }
+
+  @if (attributeName && componentState.getError(attributeName).length > 0) {
+    <div class="text-red-500 text-xs mt-1 flex flex-col gap-0.5 animate-fadeIn">
+      @for (errorMsg of componentState.getError(attributeName); track $index) {
+        <div class="flex items-center gap-1">
+          <span class="inline-block w-1 h-1 bg-red-500 rounded-full"></span>
+          <span>{{ errorMsg }}</span>
+        </div>
+      }
+    </div>
+  }
+</div>

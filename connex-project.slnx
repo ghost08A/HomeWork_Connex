@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="HomeWork.Domain/HomeWork.Domain.csproj" Id="ada1c362-3331-4533-847a-061b4a12ca39" />
+  <Project Path="HomeWork.Service/HomeWork.Service.csproj" Id="cb90dc73-5586-48bd-a201-97bed6b3718f" />
+  <Project Path="Web.HomeWork/Web.HomeWork.csproj" Id="f65c6a98-fdbc-4bd9-ae40-7bf888464e47" />
+</Solution>

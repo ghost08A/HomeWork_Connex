@@ -1,0 +1,48 @@
+<div class="login-container">
+  <div class="max-w-md mx-auto mt-20 p-8 bg-white rounded-xl shadow-lg">
+    <h2 class="text-2xl font-bold mb-6 text-center">Arm Store App</h2>
+
+    <dx-validation-group #loginGroup>
+      
+      <app-custom-input
+        type="Text"
+        label="Username"
+        attributeName="Username"
+        placeholder="Enter Username"
+        [isRequired]="true"
+        [componentState]="loginState"
+        [fieldValue]="formData.Username"
+        (fieldValueChange)="onFieldValueChange('Username', $event)"
+        class="mb-4 block">
+      </app-custom-input>
+
+      <app-custom-input
+        type="Password"
+        label="Password"
+        attributeName="Password"
+        placeholder="Enter Password"
+        [isRequired]="true"
+        [componentState]="loginState"
+        [fieldValue]="formData.Password"
+        (fieldValueChange)="onFieldValueChange('Password', $event)"
+        class="mb-6 block">
+      </app-custom-input>
+
+      <div class="flex flex-col gap-3 mt-6">
+        <app-custom-button
+          text="เข้าสู่ระบบ" 
+          type="default" 
+          width="100%"
+          (onClick)="onLoginClick($event)">
+        </app-custom-button>
+        <app-custom-button
+          text="สมัครสมาชิก" 
+          type="normal" 
+          width="100%"
+          (onClick)="onRegisterClick($event)">
+        </app-custom-button>
+      </div>
+
+    </dx-validation-group>
+  </div>
+</div>

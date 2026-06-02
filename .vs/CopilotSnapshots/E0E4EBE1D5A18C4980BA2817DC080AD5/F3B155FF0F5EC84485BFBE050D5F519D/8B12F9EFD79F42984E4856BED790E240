@@ -1,0 +1,75 @@
+﻿using System.Reflection;
+// using connex_project.Data; // เอาคอมเมนต์ออกเมื่อดึงไฟล์ Database เสร็จแล้ว
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 1. นำเข้า Controllers
+builder.Services.AddControllers();
+
+// 2. ตั้งค่า Swagger (แบบไม่มี Key)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// 3. เรียกใช้ระบบ Auto Dependency Injection (สแกน Service และ Repository อัตโนมัติ)
+RegisterAutoDependencies(builder);
+
+var app = builder.Build();
+
+// 4. การตั้งค่า HTTP Request Pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Web.HomeWork API v1");
+        c.RoutePrefix = string.Empty; // Set Swagger UI as the home page
+    });
+}
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+
+// ==========================================
+// ฟังก์ชันสำหรับสแกนและจับคู่ DI อัตโนมัติ (Auto DI)
+// ==========================================
+static void RegisterAutoDependencies(WebApplicationBuilder builder)
+{
+    // ดึงข้อมูลคลาสทั้งหมดในโปรเจกต์ปัจจุบัน
+    var assembly = Assembly.GetExecutingAssembly();
+
+    // 1. สแกนหาไฟล์ที่ลงท้ายด้วย "Service"
+    var serviceTypes = assembly.GetTypes()
+        .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Service"))
+        .ToList();
+
+    foreach (var implementation in serviceTypes)
+    {
+        // หา Interface ที่ชื่อตรงกัน (เช่น UserService คู่กับ IUserService)
+        var interfaceType = implementation.GetInterfaces()
+            .FirstOrDefault(i => i.Name == $"I{implementation.Name}");
+
+        if (interfaceType != null)
+        {
+            builder.Services.AddScoped(interfaceType, implementation);
+        }
+    }
+
+    // 2. สแกนหาไฟล์ที่ลงท้ายด้วย "Repository"
+    var repositoryTypes = assembly.GetTypes()
+        .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Repository"))
+        .ToList();
+
+    foreach (var implementation in repositoryTypes)
+    {
+        var interfaceType = implementation.GetInterfaces()
+            .FirstOrDefault(i => i.Name == $"I{implementation.Name}");
+
+        if (interfaceType != null)
+        {
+            builder.Services.AddScoped(interfaceType, implementation);
+        }
+    }
+}

@@ -1,0 +1,47 @@
+# =========================
+# Backend (.NET / C#)
+# =========================
+# โฟลเดอร์ที่เกิดจากการ Build โปรเจกต์ (ไม่ต้องเอาขึ้นเพราะเดี๋ยวไป Build ใหม่ได้)
+**/[Bb]in/
+**/[Oo]bj/
+
+# ไฟล์การตั้งค่าส่วนตัวของ Visual Studio
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+
+# ไฟล์ Log ต่างๆ
+*.log
+
+# (ถ้ามี) ไฟล์แอบเก็บ Password หรือ Connection String รหัสผ่านจริง ไม่ควรเอาขึ้น Git
+# appsettings.Development.json
+# appsettings.json
+
+
+# =========================
+# Frontend (Angular / Node.js)
+# =========================
+# โฟลเดอร์เก็บไลบรารีของ Node
+**/node_modules/
+**/dist/
+**/tmp/
+**/out-tsc/
+**/bazel-out/
+**/.angular/
+**/npm-debug.log
+**/yarn-error.log
+
+# =========================
+# OS & Editor Tools (Mac, Windows, VS Code)
+# =========================
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
+
+# VS Code (การตั้งค่า Editor ส่วนตัวของแต่ละเครื่อง)
+.vscode/

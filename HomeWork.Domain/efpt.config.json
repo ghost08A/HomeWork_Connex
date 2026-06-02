@@ -1,0 +1,106 @@
+﻿{
+   "CodeGenerationMode": 4,
+   "ContextClassName": "connexContext",
+   "ContextNamespace": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": false,
+   "IrregularWords": null,
+   "MinimumProductVersion": "2.6.1604",
+   "ModelNamespace": null,
+   "OutputContextPath": null,
+   "OutputPath": "Models",
+   "PluralRules": null,
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "HomeWork.Domain",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 2,
+   "SelectedToBeGenerated": 0,
+   "SingularRules": null,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "public.Category",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.LogOrder",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.LogOrderDetail",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.LogProduct",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.LogUser",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.MapRolePage",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.Navbar",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.Order",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.OrderDetail",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.Product",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.RefPage",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.Role",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.Token",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.User",
+         "ObjectType": 0
+      }
+   ],
+   "UiHint": null,
+   "UncountableWords": null,
+   "UseAsyncStoredProcedureCalls": true,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": false,
+   "UseDatabaseNamesForRoutines": true,
+   "UseDateOnlyTimeOnly": true,
+   "UseDbContextSplitting": false,
+   "UseDecimalDataAnnotationForSprocResult": true,
+   "UseFluentApiOnly": true,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": true,
+   "UseInternalAccessModifiersForSprocsAndFunctions": false,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UsePrefixNavigationNaming": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false,
+   "UseT4Split": false,
+   "UseTypedTvpParameters": true
+}
