@@ -1,16 +1,19 @@
 ﻿
 using HomeWork.Domain.Interfaces.Services.AuthService;
-using HomeWork.Domain.Models;
+using HomeWork.Domain.Interfaces.Services.TokenService;
 using HomeWork.Domain.RequestModels.AuthRequestModel;
 using HomeWork.Domain.RequestModels.RefreshTokenRequestModel;
 using HomeWork.Domain.ResponseModels.AuthResponseModel;
+using HomeWork.Domain.Models;
 using HomeWork.Domain.Share.Errors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
+
+
 using System.Text;
 
 namespace HomeWork.Service.ImplementServices.AuthService
@@ -20,11 +23,13 @@ namespace HomeWork.Service.ImplementServices.AuthService
         CustomError error = new CustomError();
         private readonly connexContext _context;
         private readonly IConfiguration _config;
+        private readonly ITokenService _tokenService;
 
-        public AuthService(connexContext context, IConfiguration config)
+        public AuthService(connexContext context, IConfiguration config, ITokenService tokenService)
         {
             _context = context;
             _config = config;
+            _tokenService = tokenService;
         }
         public async Task<LoginResponseModel> LoginAsync(LoginRequestModel request)
         {
@@ -35,70 +40,114 @@ namespace HomeWork.Service.ImplementServices.AuthService
             var user = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username && x.PasswordHash == hashPassword);
             if (user != null)
             {
-
-                var accessToken = GenerateAccessToken(user);
-                var refreshToken = GenerateRefreshToken();
-
-                var userToken = new Token
+                var jwtModel = new JwtTokenModel
                 {
                     UserId = user.UserId,
-                    RefreshToken = refreshToken,
-                    AccessToken = accessToken,
-                    RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10),
-                    CreatedBy = user.UserId,
+                    Username = user.Username,
+                    RoleCode = user.RoleCode 
                 };
-
-                _context.Tokens.Add(userToken);
-                await _context.SaveChangesAsync(); 
+                await SetJWTTokenService(jwtModel);
                 return new LoginResponseModel
                 {
                     Message = "Login Success",
-                    AccessToken = accessToken,
-                    RefreshToken = refreshToken
                 };
             }
             error.AddError("หรัสผิดเดอร์");
           
             error.ThrowIfError();
             return null;
-
         }
-        
-        public async Task<LoginResponseModel> RefreshTokenAsync(RefreshTokenRequestModel request)
-        {
-            var principal = GetPrincipalFromExpiredToken(request.AccessToken);
-            var userIdString = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
+        public async Task<LoginResponseModel> RefreshTokenAsync(TokenRequestModel request)
+        {
+            var oldTokens = _tokenService.GetCurrentToken();
+            if (string.IsNullOrEmpty(oldTokens.RefreshToken) || string.IsNullOrEmpty(oldTokens.AccessToken))
             {
-                return null;
-            }
-            // ค้นหาตั๋ว(Refresh Token) นี้ใน Database
-            var saveToken = await _context.Tokens.FirstOrDefaultAsync(t => t.UserId == userId);
-            //ถ้าหาไม่เจอ ให้เตะออก
-            if ( saveToken == null)
+                return null; // ไม่มี Token ใน Cookie ให้กลับไปหน้า Login
+            };
+            var saveToken = await _context.Tokens.FirstOrDefaultAsync(t =>
+                t.RefreshToken == oldTokens.RefreshToken &&
+                t.AccessToken == oldTokens.AccessToken
+            );
+
+            if (saveToken == null)
             {
-                return null;
-            }
-            //ลบtokem ที่หมดเวลาแล้วออก
+                return null; // ไม่มี Token ใน Database ให้กลับไปหน้า Login
+            };
+
             if (saveToken.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
                 _context.Tokens.Remove(saveToken);
-                await _context.SaveChangesAsync(); 
-                return null; 
-            }
+                await _context.SaveChangesAsync();
+                return null;
+            };
 
-            //  ถ้าตั๋วถูกต้องและยังไม่หมดอายุ -> ดึงข้อมูล User คนนั้นขึ้นมา
-            var user = await _context.Users.FindAsync(userId);
-            var newAccessToken = GenerateAccessToken(user);
+            var user = await _context.Users.FindAsync(saveToken.UserId);
+            if (user == null) return null;
+
+            var jwtModel = new JwtTokenModel
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                RoleCode = user.RoleCode
+            };
+
+           
+            await SetJWTTokenService(jwtModel);
+
             return new LoginResponseModel
             {
-                Message = "Token Refreshed Successfully",
-                AccessToken = newAccessToken,
-                RefreshToken = saveToken.RefreshToken
+                Message = "Token Refreshed Successfully"
             };
-          
         }
+
+            private async Task SetJWTTokenService(JwtTokenModel user)
+        {
+            // ให้ Shared Service ออกบัตรให้
+            string accessToken = _tokenService.GenerateToken(user);
+            string refreshToken;
+            //string refreshToken = _tokenService.GenerateRefreshToken();
+
+           
+
+            // ค้นหาว่า User คนนี้มี Token เก่าใน DB ไหม
+            var dbToken = await _context.Tokens.FirstOrDefaultAsync(x => x.UserId == user.UserId);
+
+            if (dbToken == null)
+            {
+                refreshToken = _tokenService.GenerateRefreshToken();
+                dbToken = new Token
+                {
+                    UserId = user.UserId,
+                    CreatedBy = user.UserId,
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10)
+                };
+                _context.Tokens.Add(dbToken);
+            }
+            else
+            {
+                refreshToken = dbToken.RefreshToken;
+                dbToken.AccessToken = accessToken;
+            }
+
+            //เอาบัตรไปใส่ตู้เซฟล่องหน(HttpOnly Cookie)
+            _tokenService.SetHttpToken(new SetTokenRequest()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            });
+
+            // อัปเดตข้อมูล Token และตั้งเวลาหมดอายุ 10 นาที
+            //dbToken.AccessToken = accessToken;
+            //dbToken.RefreshToken = refreshToken;
+            //dbToken.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10);
+
+            await _context.SaveChangesAsync();
+        }
+
+        
         
         public async Task<string> RegisterAsync(RegisterRequestModel request)
         {
@@ -212,37 +261,6 @@ namespace HomeWork.Service.ImplementServices.AuthService
             }
 
             return sb.ToString();
-        }
-        // เครื่องมือผลิต Access Token (อายุ 2 นาที)
-        private string GenerateAccessToken(User user)
-        {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, user.RoleCode)
-            };
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(2), // 🌟 บังคับหมดอายุใน 2 นาที
-                signingCredentials: credentials);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-        // เครื่องมือผลิต Refresh Token (สุ่มตัวอักษรมั่วๆ)
-        private string GenerateRefreshToken()
-        {
-            var randomNumber = new byte[32];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(randomNumber);
-                return Convert.ToBase64String(randomNumber);
-            }
         }
 
         private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)

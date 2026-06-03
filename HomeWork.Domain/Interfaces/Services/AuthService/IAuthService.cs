@@ -8,8 +8,7 @@ namespace HomeWork.Domain.Interfaces.Services.AuthService
     {
         Task<LoginResponseModel> LoginAsync(LoginRequestModel request);
 
-
-        Task<LoginResponseModel> RefreshTokenAsync(RefreshTokenRequestModel request);
+        Task<LoginResponseModel> RefreshTokenAsync(TokenRequestModel request);
 
         Task<string> RegisterAsync(RegisterRequestModel request);
     }

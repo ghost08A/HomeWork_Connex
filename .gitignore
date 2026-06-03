@@ -1,0 +1,39 @@
+# =========================
+# Backend (.NET / C#)
+# =========================
+**/[Bb]in/
+**/[Oo]bj/
+
+# Visual Studio
+.vs/
+**/.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+# Logs
+*.log
+
+# =========================
+# Frontend (Angular / Node.js)
+# =========================
+**/node_modules/
+**/dist/
+**/tmp/
+**/out-tsc/
+**/bazel-out/
+**/.angular/
+**/npm-debug.log
+**/yarn-error.log
+
+# =========================
+# OS & Editor
+# =========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
+
+# VS Code workspace-local settings
+.vscode/

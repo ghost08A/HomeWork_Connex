@@ -51,6 +51,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddHttpContextAccessor(); // เพื่อให้ Service สามารถเข้าถึง HttpContext ได้ (เช่น ดึงข้อมูล User จาก Token)
+
 
 
 // 3. เรียกใช้ระบบ Auto Dependency Injection (สแกน Service และ Repository อัตโนมัติ)

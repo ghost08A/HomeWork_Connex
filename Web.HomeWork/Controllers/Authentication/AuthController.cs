@@ -1,5 +1,6 @@
 ﻿using HomeWork.Domain.Interfaces.Services.AuthService;
 using HomeWork.Domain.RequestModels.AuthRequestModel;
+using HomeWork.Domain.RequestModels.RefreshTokenRequestModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,6 +31,23 @@ namespace Web.HomeWork.Controllers.Authentication
             }
             return Unauthorized(new { Message = "รหัสผิดเดอร์" });
         }
+
+        [HttpPost]
+        [Route("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] TokenRequestModel request)
+        {
+            // เรียกใช้เมธอดจาก Service
+            var result = await _authService.RefreshTokenAsync(request);
+
+            // ส่งผลลัพธ์กลับไป
+            if (result != null)
+            {
+                return Ok(result);
+            }
+            return Unauthorized("Invalid refresh token");
+        }
+
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel request)
         {
