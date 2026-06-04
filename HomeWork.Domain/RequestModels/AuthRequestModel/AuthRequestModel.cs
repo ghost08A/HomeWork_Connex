@@ -10,6 +10,12 @@ namespace HomeWork.Domain.RequestModels.AuthRequestModel
         public string Password { get; set; }
     }
 
+    public class IsSessionValidRequestModel
+    {
+        public int userId { get; set; }
+        public string accessToken { get; set; }
+    }
+
     public class RegisterRequestModel
     {
         public string FirstName { get; set; }

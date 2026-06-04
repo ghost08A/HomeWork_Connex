@@ -47,6 +47,27 @@ namespace Web.HomeWork.Controllers.Authentication
             return Unauthorized("Invalid refresh token");
         }
 
+        [HttpPost]
+        [Route("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _authService.LogoutAsync();
+            return Ok(new { message = "ออกจากระบบสำเร็จ" });
+        }
+
+        [Authorize] // ต้องล็อกอินเท่านั้นถึงเรียกได้
+        [HttpGet]
+        [Route("GetProfile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            var profile = await _authService.GetCurrentUserProfileAsync();
+            if (profile == null)
+                return Unauthorized(new { message = "กรุณาเข้าสู่ระบบใหม่" });
+
+            return Ok(profile);
+        }
+
+
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel request)

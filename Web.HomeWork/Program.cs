@@ -22,9 +22,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp", policy =>
     {
-        policy.WithOrigins("http://localhost:4200") // อนุญาตเฉพาะ URL ของหน้าบ้านเรา
-              .AllowAnyHeader()                     // อนุญาตทุก Header (เช่น Authorization)
-              .AllowAnyMethod();                    // อนุญาตทุก HTTP Method (GET, POST, PUT, DELETE)
+        policy.WithOrigins("http://localhost:4200")    // อนุญาตเฉพาะ URL ของหน้าบ้านเรา
+              .AllowAnyHeader()                       // อนุญาตทุก Header (เช่น Authorization)
+              .AllowAnyMethod()                      // อนุญาตทุก HTTP Method (GET, POST, PUT, DELETE)
+              .AllowCredentials();                  // ต้องเปิดสวิตช์ยอมรับ Cookie
     });
 });
 builder.Services.AddDbContext<connexContext>(options =>
@@ -48,6 +49,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
             ClockSkew = TimeSpan.Zero // สำคัญมาก! ปิดการทดเวลาของระบบ เพื่อให้หมดอายุตรงเป๊ะ 2 นาที
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Cookies["accessToken"];
+
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 

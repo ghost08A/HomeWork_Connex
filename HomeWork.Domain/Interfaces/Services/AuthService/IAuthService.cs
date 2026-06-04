@@ -10,6 +10,12 @@ namespace HomeWork.Domain.Interfaces.Services.AuthService
 
         Task<LoginResponseModel> RefreshTokenAsync(TokenRequestModel request);
 
+        Task<bool> LogoutAsync();
+
+        Task<bool> IsSessionValid(IsSessionValidRequestModel request);
+
+        Task<UserProfileResponseModel> GetCurrentUserProfileAsync();
+
         Task<string> RegisterAsync(RegisterRequestModel request);
     }
 }

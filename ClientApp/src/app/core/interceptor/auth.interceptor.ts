@@ -1,21 +1,20 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { AuthService } from '../../Module/Authentication/service/auth.service';
-
+import { catchError, throwError } from 'rxjs';
+import { Router } from '@angular/router';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-    const authService = inject(AuthService);
-    const token = authService.getToken();
+const router = inject(Router);    
+    const clonedRequest = req.clone({
+        withCredentials: true
+    })
 
-       // ถ้ามี Token ให้เพิ่ม Authorization Header ไปที่ Request
-    if (token) {
-        const clonedRequest = req.clone({
-            setHeaders: {
-                Authorization: `Bearer ${token}`
+    return next(clonedRequest).pipe(
+        catchError((error: HttpErrorResponse) => {
+            if(error.status === 401){
+                router.navigate(['/auth/login']);
             }
-        });
-        // ส่ง Request ที่แปะ Token แล้วไปให้ Backend
-        return next(clonedRequest);
-    }
-    // ถ้าไม่มี Token ก็ส่ง Request ปกติไปให้ Backend
-    return next(req);
+            return throwError(() => error);
+        }
+        )
+    );
 }

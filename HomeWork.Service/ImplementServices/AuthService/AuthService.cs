@@ -101,54 +101,74 @@ namespace HomeWork.Service.ImplementServices.AuthService
             };
         }
 
-            private async Task SetJWTTokenService(JwtTokenModel user)
+        public async Task<bool> LogoutAsync()
         {
-            // ให้ Shared Service ออกบัตรให้
-            string accessToken = _tokenService.GenerateToken(user);
-            string refreshToken;
-            //string refreshToken = _tokenService.GenerateRefreshToken();
-
-           
-
-            // ค้นหาว่า User คนนี้มี Token เก่าใน DB ไหม
-            var dbToken = await _context.Tokens.FirstOrDefaultAsync(x => x.UserId == user.UserId);
-
-            if (dbToken == null)
+            var token = _tokenService.GetCurrentToken();
+            if(!string.IsNullOrEmpty(token.AccessToken) && !string.IsNullOrEmpty(token.RefreshToken))
             {
-                refreshToken = _tokenService.GenerateRefreshToken();
-                dbToken = new Token
+                var junkToken = await _context.Tokens.FirstOrDefaultAsync(t =>
+                    t.RefreshToken == token.RefreshToken
+                );
+                if (junkToken != null)
                 {
-                    UserId = user.UserId,
-                    CreatedBy = user.UserId,
-                    AccessToken = accessToken,
-                    RefreshToken = refreshToken,
-                    RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10)
-                };
-                _context.Tokens.Add(dbToken);
+                    _context.Tokens.Remove(junkToken);
+                    await _context.SaveChangesAsync();
+                }
             }
-            else
-            {
-                refreshToken = dbToken.RefreshToken;
-                dbToken.AccessToken = accessToken;
-            }
+            _tokenService.RemoveHttpToken();
 
-            //เอาบัตรไปใส่ตู้เซฟล่องหน(HttpOnly Cookie)
-            _tokenService.SetHttpToken(new SetTokenRequest()
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            });
-
-            // อัปเดตข้อมูล Token และตั้งเวลาหมดอายุ 10 นาที
-            //dbToken.AccessToken = accessToken;
-            //dbToken.RefreshToken = refreshToken;
-            //dbToken.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10);
-
-            await _context.SaveChangesAsync();
+            return true;
         }
 
-        
-        
+
+        public async Task<bool> IsSessionValid(IsSessionValidRequestModel request)
+        {
+           var storedToken = await _context.Tokens
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.UserId == request.userId);
+            return storedToken != null && storedToken.AccessToken == request.accessToken;
+        }
+
+        public async Task<UserProfileResponseModel> GetCurrentUserProfileAsync()
+        {
+            try
+            {
+                var currentUser = _tokenService.GetCurrentUser();
+
+                if(currentUser == null )
+                {
+                   error.AddError("ไม่มีผู้ใช้ในระบบ กรุณาเข้าสู่ระบบใหม่");
+                    error.ThrowIfError();
+                }
+
+                var user = await _context.Users.FindAsync(currentUser.UserId);
+                if (user == null) 
+                {
+                    error.AddError("ไม่พบผู้ใช้นี้ กรุณาลองใหม่อีกครั้ง"); // ไม่มีผู้ใช้ใน Database ให้กลับไปหน้า Login
+                    error.ThrowIfError();
+                }
+
+                return new UserProfileResponseModel
+                {
+                    UserId = user.UserId,
+                    Username = user.Username,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    RoleCode = user.RoleCode
+                };
+            }
+            catch (Exception ex)
+            {
+                error.AddError("ไม่สามารถดึงข้อมูลผู้ใช้ได้");
+                error.ThrowIfError();
+                return null;
+            }
+        }
+
+
+
+
+
         public async Task<string> RegisterAsync(RegisterRequestModel request)
         {
             
@@ -292,6 +312,51 @@ namespace HomeWork.Service.ImplementServices.AuthService
             if (string.IsNullOrEmpty(text)) return false;
             // เช็คว่ามีอักขระที่เป็น Surrogate (Emoji) ปะปนมาหรือไม่
             return text.Any(char.IsSurrogate);
+        }
+        private async Task SetJWTTokenService(JwtTokenModel user)
+        {
+            // ให้ Shared Service ออกบัตรให้
+            string accessToken = _tokenService.GenerateToken(user);
+            string refreshToken;
+            //string refreshToken = _tokenService.GenerateRefreshToken();
+
+
+
+            // ค้นหาว่า User คนนี้มี Token เก่าใน DB ไหม
+            var dbToken = await _context.Tokens.FirstOrDefaultAsync(x => x.UserId == user.UserId);
+
+            if (dbToken == null)
+            {
+                refreshToken = _tokenService.GenerateRefreshToken();
+                dbToken = new Token
+                {
+                    UserId = user.UserId,
+                    CreatedBy = user.UserId,
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10)
+                };
+                _context.Tokens.Add(dbToken);
+            }
+            else
+            {
+                refreshToken = dbToken.RefreshToken;
+                dbToken.AccessToken = accessToken;
+            }
+
+            //เอาบัตรไปใส่ตู้เซฟล่องหน(HttpOnly Cookie)
+            _tokenService.SetHttpToken(new SetTokenRequest()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            });
+
+            // อัปเดตข้อมูล Token และตั้งเวลาหมดอายุ 10 นาที
+            //dbToken.AccessToken = accessToken;
+            //dbToken.RefreshToken = refreshToken;
+            //dbToken.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10);
+
+            await _context.SaveChangesAsync();
         }
 
     }

@@ -58,16 +58,7 @@ export class LoginComponent {
         // กรณีที่ 1: Backend ตอบกลับมาว่า "สำเร็จ" (HTTP Status 200)
         next: (response) => {
           console.log('ข้อมูลที่ Backend ตอบกลับมา:', response);
-
-          const token = response?.accessToken ?? response?.token;
-
-          if (token) {
-            localStorage.clear(); // ล้างข้อมูลเก่าออกก่อนเก็บข้อมูลใหม่
-            localStorage.setItem('token', token); // เก็บ Token ที่ได้จาก Backend ไว้ใน Local Storage
-          }
           notify({ message: 'เข้าสู่ระบบสำเร็จ!', type: 'success', displayTime: 3000 });
-
-
           setTimeout(() => {
             this.router.navigate(['/home']);
           }, 1000);
