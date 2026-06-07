@@ -389,7 +389,6 @@ public partial class connexContext : DbContext
         {
             entity.ToTable("UserRole");
 
-            entity.Property(e => e.UserRoleId).ValueGeneratedNever();
             entity.Property(e => e.RoleCode)
                 .IsRequired()
                 .HasMaxLength(20);

@@ -52,33 +52,15 @@ export class LoginComponent {
       notify({ message: 'กำลังเข้าสู่ระบบ...', type: 'info', displayTime: 2000 });
 
       // 3. สั่งให้บุรุษไปรษณีย์ส่งข้อมูล และใช้ .subscribe() เพื่อ "รอเปิดกล่อง" รับคำตอบจาก Backend
-      this.authService.login(this.formData).subscribe({
-        
-        // กรณีที่ 1: Backend ตอบกลับมาว่า "สำเร็จ" (HTTP Status 200)
+      // ส่ง loginState เข้าไปด้วยเพื่อให้ Service จัดการ Error ที่ Backend ส่งมาได้
+      this.authService.login(this.formData, this.loginState).subscribe({
+        // Backend ตอบกลับมาว่า "สำเร็จ" (HTTP Status 200)
         next: (response) => {
-          console.log('ข้อมูลที่ Backend ตอบกลับมา:', response);
           notify({ message: 'เข้าสู่ระบบสำเร็จ!', type: 'success', displayTime: 3000 });
           setTimeout(() => {
             this.router.navigate(['/home']);
           }, 1000);
         },
-
-        // กรณีที่ 2: Backend ตอบกลับมาว่า "มีข้อผิดพลาด" (เช่น รหัสผิด, เซิร์ฟเวอร์พัง 400, 401, 500)
-        error: (err) => {
-         
-          console.error('เข้าสู่ระบบไม่สำเร็จ:', err);
-
-           var errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
-          if (err.error && err.error.Errors && err.error.Errors.length > 0) {
-          // 2. ดึงค่า String ใน Array มาได้เลย ไม่ต้องใส่ .message 
-            errorMessage = err.error.Errors[0]; 
-          } 
-          // 3. เปลี่ยนเป็น Message (ตัว M ใหญ่) ตามที่ API ส่งมา
-          else if (err.error && err.error.Message) {
-            errorMessage = err.error.Message;
-          }
-           notify({ message: `เข้าสู่ระบบไม่สำเร็จ: ${errorMessage}`, type: 'error', displayTime: 3000 });
-        }
       });
     } else {
       notify({ message: 'กรุณากรอก Username และ Password ให้ครบถ้วน', type: 'error', displayTime: 3000 });

@@ -29,6 +29,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
         public AuthService(connexContext context, IConfiguration config, ITokenService tokenService)
         {
             _config = config;
+            _context = context;
             _tokenService = tokenService;
         }
         public async Task<LoginResponseModel> LoginAsync(LoginRequestModel request)
@@ -54,8 +55,10 @@ namespace HomeWork.Service.ImplementServices.AuthService
             if (user == null)
             {
                 error.AddError("username หรือ password ไม่ถูกต้องกรุณาลองใหม่อีกครั้ง");
+                error.ThrowIfError();
+                return null;
+
             }
-            error.ThrowIfError();
 
             user.LastCheckin = DateTime.UtcNow;
             // ให้ Shared Service ออกบัตรให้

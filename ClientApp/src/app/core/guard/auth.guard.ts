@@ -3,39 +3,24 @@ import { CanActivateFn, Router } from '@angular/router';
 import {AuthService} from '../../Module/Authentication/service/auth.service';
 import { isPlatformBrowser } from '@angular/common';
 import { catchError, map, of } from 'rxjs';
+import { GuardService } from '../../Module/Shared/services/guard.service';
+
 export const authGuard: CanActivateFn = (route, state) => {
     const authService = inject(AuthService);
+
     const router = inject(Router);
-    const platformId = inject(PLATFORM_ID);
-
-    console.log('AuthGuard: Checking authentication for route:', state.url);
-
-    // ถ้ามี Token ถือว่าล็อกอินแล้ว อนุญาตให้ผ่านได้ (return true)
-    if(isPlatformBrowser(platformId)){
-        console.log('isPlatformBrowser', isPlatformBrowser(platformId));
-        
-        if (authService.isLoggedIn()) {
-                console.log('AuthGuard: User is logged in, allowing access to route:', state.url);
-                return true;
-            }
-    }
-
-    //กรณีที่ไม่มีข้อมูลใน state  guard จะลองไป Auth/GetProfile เพื่อเช็คว่า Token ยังใช้ได้อยู่หรือไม่
+    const guardService = inject(GuardService);
+    
     return authService.fetchGetProfile().pipe(
-        map(user => {
-            if (user) {
-                console.log('AuthGuard: User profile fetched successfully, allowing access to route:', state.url);
-                return true; // ถ้าได้ข้อมูลผู้ใช้กลับมา แสดงว่า Token ยังใช้ได้ อนุญาตให้ผ่าน
-            }else{
-                console.log('not found user');
-                
-                router.navigate(['/auth/login']); // ถ้าไม่ได้ข้อมูลผู้ใช้ แสดงว่า Token หมดอายุหรือไม่ถูกต้อง ให้ไปหน้า Login
-                return false;
-            }
+        map((profileRes) => {
+            guardService.setPermission(profileRes.roles); // เก็บข้อมูลสิทธิ์ไว้ใน GuardService
+            // อนุญาตให้เข้าถึงหน้าเพจได้ (ถ้าถึงตรงนี้ได้แสดงว่า Token ยังไม่หมดอายุ และดึงข้อมูลโปรไฟล์มาได้สำเร็จ)
+            return true;
         }),
         catchError(() => {
-            router.navigate(['/auth/login']); // ถ้าเกิดข้อผิดพลาด เช่น Token หมดอายุ ให้ไปหน้า Login
+            router.navigate(['/auth/login']);
             return of(false);
         })
     )
+   
 }
