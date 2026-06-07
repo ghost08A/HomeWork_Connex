@@ -15,6 +15,12 @@ public partial class OrderDetail
 
     public int Seq { get; set; }
 
+    public string StatusOrderDetailCode { get; set; }
+
+    public string Remark { get; set; }
+
+    public decimal VatRate { get; set; }
+
     public decimal UnitPrice { get; set; }
 
     public int Quantity { get; set; }
@@ -30,4 +36,6 @@ public partial class OrderDetail
     public virtual Order Order { get; set; }
 
     public virtual Product Product { get; set; }
+
+    public virtual StatusOrderDetail StatusOrderDetailCodeNavigation { get; set; }
 }

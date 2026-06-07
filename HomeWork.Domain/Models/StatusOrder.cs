@@ -5,15 +5,11 @@ using System.Collections.Generic;
 
 namespace HomeWork.Domain.Models;
 
-public partial class LogOrder
+public partial class StatusOrder
 {
-    public int LogOrderId { get; set; }
-
-    public int? OrderId { get; set; }
-
-    public string Action { get; set; }
-
     public string StatusOrderCode { get; set; }
+
+    public string StatusOrderName { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -22,4 +18,6 @@ public partial class LogOrder
     public DateTime? UpdatedAt { get; set; }
 
     public int? UpdatedBy { get; set; }
+
+    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 }

@@ -15,6 +15,7 @@ using System.IdentityModel.Tokens.Jwt;
 
 
 using System.Text;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace HomeWork.Service.ImplementServices.AuthService
 {
@@ -27,7 +28,6 @@ namespace HomeWork.Service.ImplementServices.AuthService
 
         public AuthService(connexContext context, IConfiguration config, ITokenService tokenService)
         {
-            _context = context;
             _config = config;
             _tokenService = tokenService;
         }
@@ -35,71 +35,98 @@ namespace HomeWork.Service.ImplementServices.AuthService
         {
             // ย้าย Logic การคิดคำนวณต่างๆ มาไว้ที่นี่ 
             // (ในอนาคตเราจะเอา Repository มาเช็คกับ Database ตรงนี้ครับ)
+
+            if (string.IsNullOrWhiteSpace(request.Username))
+            {
+                error.AddErrorKeyAndToast("username", "กรุณากรอก username");
+            }
+            if (string.IsNullOrWhiteSpace(request.Password))
+            {
+                error.AddErrorKeyAndToast("password", "กรุณากรอก password");
+            }
+            error.ThrowIfError();
             string hashPassword = ComputeSHA512(request.Password);
 
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username && x.PasswordHash == hashPassword);
-            if (user != null)
+            var user = await _context.Users
+                .Include(user => user.UserRoles)
+                .FirstOrDefaultAsync(x => x.Username == request.Username && x.PasswordHash == hashPassword);
+
+            if (user == null)
             {
-                var jwtModel = new JwtTokenModel
-                {
-                    UserId = user.UserId,
-                    Username = user.Username,
-                    RoleCode = user.RoleCode 
-                };
-                await SetJWTTokenService(jwtModel);
-                return new LoginResponseModel
-                {
-                    Message = "Login Success",
-                };
+                error.AddError("username หรือ password ไม่ถูกต้องกรุณาลองใหม่อีกครั้ง");
             }
-            error.AddError("หรัสผิดเดอร์");
-          
             error.ThrowIfError();
-            return null;
+
+            user.LastCheckin = DateTime.UtcNow;
+            // ให้ Shared Service ออกบัตรให้
+            string accessToken, refreshToken;
+            SetJWTTokenService(user, out accessToken, out refreshToken);
+
+            var dbToken = new Token
+            {
+                UserId = user.UserId,
+                CreatedBy = user.UserId,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                AccessTokenExpiryTime = DateTime.UtcNow.AddMinutes(2),
+                RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10)
+            };
+            _context.Tokens.Add(dbToken);
+           
+            await _context.SaveChangesAsync();
+            return new LoginResponseModel();
+
+            
         }
 
-        public async Task<LoginResponseModel> RefreshTokenAsync(TokenRequestModel request)
+        public async Task<LoginResponseModel> RefreshTokenAsync()
         {
             var oldTokens = _tokenService.GetCurrentToken();
             if (string.IsNullOrEmpty(oldTokens.RefreshToken) || string.IsNullOrEmpty(oldTokens.AccessToken))
-            {
                 return null; // ไม่มี Token ใน Cookie ให้กลับไปหน้า Login
-            };
+
             var saveToken = await _context.Tokens.FirstOrDefaultAsync(t =>
                 t.RefreshToken == oldTokens.RefreshToken &&
                 t.AccessToken == oldTokens.AccessToken
             );
 
-            if (saveToken == null)
-            {
-                return null; // ไม่มี Token ใน Database ให้กลับไปหน้า Login
-            };
+            if (saveToken == null) return null; // ไม่มี Token ใน Database ให้กลับไปหน้า Login
 
+            if (saveToken.RevokeAt != null)
+            {
+                _tokenService.RemoveHttpToken();
+                return null; // Token ถูกเพิกถอนแล้ว ให้กลับไปหน้า Login
+            }
+            // ตรวจสอบว่า Refresh Token หมดอายุหรือยัง
             if (saveToken.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
                 _context.Tokens.Remove(saveToken);
                 await _context.SaveChangesAsync();
                 return null;
-            };
+            }
+            ;
 
-            var user = await _context.Users.FindAsync(saveToken.UserId);
+            var user = await _context.Users
+                .Include(user => user.UserRoles)
+                .FirstOrDefaultAsync(user => user.UserId == saveToken.UserId);
             if (user == null) return null;
 
-            var jwtModel = new JwtTokenModel
-            {
-                UserId = user.UserId,
-                Username = user.Username,
-                RoleCode = user.RoleCode
-            };
+            // ออกบัตรใหม่ให้ผู้ใช้
+            string accessToken, refreshToken;
+            SetJWTTokenService(user, out accessToken, out refreshToken);
 
-           
-            await SetJWTTokenService(jwtModel);
+            saveToken.AccessToken = accessToken;
+            saveToken.RefreshToken = refreshToken;
+            saveToken.AccessTokenExpiryTime = DateTime.UtcNow.AddMinutes(2);
+            await _context.SaveChangesAsync();
 
             return new LoginResponseModel
             {
                 Message = "Token Refreshed Successfully"
             };
         }
+
+      
 
         public async Task<bool> LogoutAsync()
         {
@@ -111,7 +138,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
                 );
                 if (junkToken != null)
                 {
-                    _context.Tokens.Remove(junkToken);
+                    junkToken.RevokeAt = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                 }
             }
@@ -125,8 +152,8 @@ namespace HomeWork.Service.ImplementServices.AuthService
         {
            var storedToken = await _context.Tokens
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.UserId == request.userId);
-            return storedToken != null && storedToken.AccessToken == request.accessToken;
+                .FirstOrDefaultAsync(token => token.UserId == request.userId && token.AccessToken == request.accessToken);
+            return storedToken != null  && storedToken.RevokeAt ==null;
         }
 
         public async Task<UserProfileResponseModel> GetCurrentUserProfileAsync()
@@ -141,12 +168,18 @@ namespace HomeWork.Service.ImplementServices.AuthService
                     error.ThrowIfError();
                 }
 
-                var user = await _context.Users.FindAsync(currentUser.UserId);
+                var user = await _context.Users
+                    .Include(user => user.UserRoles)
+                    .FirstOrDefaultAsync(user => user.UserId == currentUser.UserId);
+
+
                 if (user == null) 
                 {
                     error.AddError("ไม่พบผู้ใช้นี้ กรุณาลองใหม่อีกครั้ง"); // ไม่มีผู้ใช้ใน Database ให้กลับไปหน้า Login
                     error.ThrowIfError();
                 }
+
+                List<string> Roles = user.UserRoles.Select(role => role.RoleCode).ToList();
 
                 return new UserProfileResponseModel
                 {
@@ -154,7 +187,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
                     Username = user.Username,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
-                    RoleCode = user.RoleCode
+                    Roles = Roles
                 };
             }
             catch (Exception ex)
@@ -163,6 +196,22 @@ namespace HomeWork.Service.ImplementServices.AuthService
                 error.ThrowIfError();
                 return null;
             }
+        }
+
+        public async Task<bool> RevokeAllTokensAsync(int userId)
+        {
+            // หา Token ทั้งหมดของผู้ใช้ใน Database แล้วทำการเพิกถอน (Revoke) โดยการตั้งค่า RevokeAt เป็นเวลาปัจจุบัน
+            var activeTokens = await _context.Tokens
+                .Where(token => token.UserId == userId && token.RevokeAt == null)
+                .ToListAsync();
+            if (!activeTokens.Any()) return true; //ไม่มีก็เตะถือว่าได้เหมือนกัน
+
+            foreach (var token in activeTokens)
+            {
+                token.RevokeAt = DateTime.UtcNow;
+            }
+            await _context.SaveChangesAsync();
+            return true;
         }
 
 
@@ -186,10 +235,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
             {
                 error.AddErrorKeyAndToast("username", "ห้ามใส่ emoji");
             }
-            else if (isUserExist)
-            {
-                error.AddErrorKeyAndToast("username", "Username นี้มีผู้ใช้งานแล้ว");
-            }
+            
             // เช็ค Password ตรงกันไหม
             if (request.Password != request.ConfirmPassword)
             {
@@ -258,11 +304,16 @@ namespace HomeWork.Service.ImplementServices.AuthService
                 LastName = request.LastName,
                 Phone = request.Phone,
                 BirthDate = birthDateOnly,
-                RoleCode = "member", // กำหนดสิทธิ์เริ่มต้นเป็น member ธรรมดา
+                //RoleCode = "member", // กำหนดสิทธิ์เริ่มต้นเป็น member ธรรมดา
                 CreatedAt = DateTime.UtcNow
-                // หากใน DB คุณมี Field อื่นๆ เช่น Age ก็สามารถ Mapping เพิ่มได้ครับ
+            };
+            var userRole = new UserRole
+            {
+                RoleCode = "member",
+                User = newUser
             };
 
+            _context.UserRoles.Add(userRole);
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
@@ -283,80 +334,30 @@ namespace HomeWork.Service.ImplementServices.AuthService
             return sb.ToString();
         }
 
-        private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
-        {
-            var tokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateAudience = true,
-                ValidateIssuer = true,
-                ValidIssuer = _config["Jwt:Issuer"],
-                ValidAudience = _config["Jwt:Audience"],
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"])),
-                ValidateLifetime = false //  ปิดการเช็คเวลาชั่วคราว เพื่อให้แงะข้อมูลได้แม้จะหมดอายุแล้ว
-            };
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-
-            // เช็คความถูกต้องของอัลกอริทึม
-            if (!(securityToken is JwtSecurityToken jwtSecurityToken) ||
-                !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-            {
-                throw new SecurityTokenException("Invalid token");
-            }
-
-            return principal;
-        }
         private bool ContainsEmoji(string text)
         {
             if (string.IsNullOrEmpty(text)) return false;
             // เช็คว่ามีอักขระที่เป็น Surrogate (Emoji) ปะปนมาหรือไม่
             return text.Any(char.IsSurrogate);
         }
-        private async Task SetJWTTokenService(JwtTokenModel user)
+        private void SetJWTTokenService(User user, out string accessToken, out string refreshToken)
         {
-            // ให้ Shared Service ออกบัตรให้
-            string accessToken = _tokenService.GenerateToken(user);
-            string refreshToken;
-            //string refreshToken = _tokenService.GenerateRefreshToken();
+            List<string> userRoles = user.UserRoles.Select(user => user.RoleCode).ToList();
 
-
-
-            // ค้นหาว่า User คนนี้มี Token เก่าใน DB ไหม
-            var dbToken = await _context.Tokens.FirstOrDefaultAsync(x => x.UserId == user.UserId);
-
-            if (dbToken == null)
+            var jwtModel = new JwtTokenModel
             {
-                refreshToken = _tokenService.GenerateRefreshToken();
-                dbToken = new Token
-                {
-                    UserId = user.UserId,
-                    CreatedBy = user.UserId,
-                    AccessToken = accessToken,
-                    RefreshToken = refreshToken,
-                    RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10)
-                };
-                _context.Tokens.Add(dbToken);
-            }
-            else
-            {
-                refreshToken = dbToken.RefreshToken;
-                dbToken.AccessToken = accessToken;
-            }
+                UserId = user.UserId,
+                Username = user.Username,
+                Roles = userRoles
+            };
 
-            //เอาบัตรไปใส่ตู้เซฟล่องหน(HttpOnly Cookie)
+            accessToken = _tokenService.GenerateToken(jwtModel);
+            refreshToken = _tokenService.GenerateRefreshToken();
             _tokenService.SetHttpToken(new SetTokenRequest()
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken
             });
-
-            // อัปเดตข้อมูล Token และตั้งเวลาหมดอายุ 10 นาที
-            //dbToken.AccessToken = accessToken;
-            //dbToken.RefreshToken = refreshToken;
-            //dbToken.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10);
-
-            await _context.SaveChangesAsync();
         }
 
     }

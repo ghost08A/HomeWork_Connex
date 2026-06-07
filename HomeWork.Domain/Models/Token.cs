@@ -13,6 +13,12 @@ public partial class Token
 
     public DateTime RefreshTokenExpiryTime { get; set; }
 
+    public string AccessToken { get; set; }
+
+    public DateTime AccessTokenExpiryTime { get; set; }
+
+    public DateTime? RevokeAt { get; set; }
+
     public int? UserId { get; set; }
 
     public DateTime CreatedAt { get; set; }
@@ -22,6 +28,4 @@ public partial class Token
     public DateTime? UpdatedAt { get; set; }
 
     public int? UpdatedBy { get; set; }
-
-    public string AccessToken { get; set; }
 }

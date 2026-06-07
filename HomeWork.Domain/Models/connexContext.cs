@@ -15,6 +15,8 @@ public partial class connexContext : DbContext
 
     public virtual DbSet<Category> Categories { get; set; }
 
+    public virtual DbSet<LogError> LogErrors { get; set; }
+
     public virtual DbSet<LogOrder> LogOrders { get; set; }
 
     public virtual DbSet<LogOrderDetail> LogOrderDetails { get; set; }
@@ -33,20 +35,28 @@ public partial class connexContext : DbContext
 
     public virtual DbSet<Product> Products { get; set; }
 
+    public virtual DbSet<ProductCategory> ProductCategories { get; set; }
+
     public virtual DbSet<RefPage> RefPages { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
+
+    public virtual DbSet<StatusOrder> StatusOrders { get; set; }
+
+    public virtual DbSet<StatusOrderDetail> StatusOrderDetails { get; set; }
+
+    public virtual DbSet<StatusProduct> StatusProducts { get; set; }
 
     public virtual DbSet<Token> Tokens { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<UserRole> UserRoles { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("Category_pkey");
-
             entity.ToTable("Category");
 
             entity.Property(e => e.CategoryName)
@@ -56,50 +66,76 @@ public partial class connexContext : DbContext
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
+        modelBuilder.Entity<LogError>(entity =>
+        {
+            entity.HasKey(e => e.ErrorId);
+
+            entity.ToTable("LogError");
+
+            entity.Property(e => e.CorrelationId).HasMaxLength(100);
+            entity.Property(e => e.ErrorMessage).IsRequired();
+            entity.Property(e => e.ErrorTime).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.HttpMethod).HasMaxLength(10);
+        });
+
         modelBuilder.Entity<LogOrder>(entity =>
         {
-            entity.HasKey(e => e.LogOrderId).HasName("LogOrder_pkey");
-
             entity.ToTable("LogOrder");
 
+            entity.Property(e => e.Action)
+                .IsRequired()
+                .HasMaxLength(10);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.StatusOrderCode)
+                .IsRequired()
+                .HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         modelBuilder.Entity<LogOrderDetail>(entity =>
         {
-            entity.HasKey(e => e.LogOrderDetailId).HasName("LogOrderDetail_pkey");
-
             entity.ToTable("LogOrderDetail");
 
+            entity.Property(e => e.Action)
+                .IsRequired()
+                .HasMaxLength(10);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.ProductId).HasColumnName("ProductID");
+            entity.Property(e => e.Remark).HasMaxLength(200);
+            entity.Property(e => e.StatusOrderDetailCode)
+                .IsRequired()
+                .HasMaxLength(50);
             entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.VatRate)
+                .HasPrecision(5, 2)
+                .HasColumnName("vatRate");
         });
 
         modelBuilder.Entity<LogProduct>(entity =>
         {
-            entity.HasKey(e => e.LogProductId).HasName("LogProduct_pkey");
-
             entity.ToTable("LogProduct");
 
+            entity.Property(e => e.Action)
+                .IsRequired()
+                .HasMaxLength(10);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Price).HasPrecision(18, 2);
             entity.Property(e => e.ProductName)
                 .IsRequired()
                 .HasMaxLength(200);
+            entity.Property(e => e.StatusProductCode)
+                .IsRequired()
+                .HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         modelBuilder.Entity<LogUser>(entity =>
         {
-            entity.HasKey(e => e.LogUserId).HasName("LogUser_pkey");
-
             entity.ToTable("LogUser");
 
-            entity.HasIndex(e => e.Username, "LogUser_Username_key").IsUnique();
-
+            entity.Property(e => e.Action)
+                .IsRequired()
+                .HasMaxLength(10);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.FirstName)
                 .IsRequired()
@@ -111,30 +147,23 @@ public partial class connexContext : DbContext
             entity.Property(e => e.Phone)
                 .IsRequired()
                 .HasMaxLength(15);
-            entity.Property(e => e.RoleCode)
-                .IsRequired()
-                .HasMaxLength(20);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Username)
                 .IsRequired()
                 .HasMaxLength(50);
-
-            entity.HasOne(d => d.RoleCodeNavigation).WithMany(p => p.LogUsers)
-                .HasForeignKey(d => d.RoleCode)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("LogUser_RoleCode_fkey");
         });
 
         modelBuilder.Entity<MapRolePage>(entity =>
         {
-            entity.HasKey(e => e.MapRolePageId).HasName("MapRolePage_pkey");
-
             entity.ToTable("MapRolePage");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.PageCode)
                 .IsRequired()
                 .HasMaxLength(50);
+            entity.Property(e => e.Permission)
+                .IsRequired()
+                .HasMaxLength(20);
             entity.Property(e => e.RoleCode)
                 .IsRequired()
                 .HasMaxLength(20);
@@ -142,17 +171,17 @@ public partial class connexContext : DbContext
 
             entity.HasOne(d => d.PageCodeNavigation).WithMany(p => p.MapRolePages)
                 .HasForeignKey(d => d.PageCode)
-                .HasConstraintName("MapRolePage_PageCode_fkey");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MapRolePage_RefPage");
 
             entity.HasOne(d => d.RoleCodeNavigation).WithMany(p => p.MapRolePages)
                 .HasForeignKey(d => d.RoleCode)
-                .HasConstraintName("MapRolePage_RoleCode_fkey");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MapRolePage_Role");
         });
 
         modelBuilder.Entity<Navbar>(entity =>
         {
-            entity.HasKey(e => e.NavbarId).HasName("Navbar_pkey");
-
             entity.ToTable("Navbar");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -162,48 +191,63 @@ public partial class connexContext : DbContext
             entity.Property(e => e.PageCode)
                 .IsRequired()
                 .HasMaxLength(50);
-            entity.Property(e => e.Seq).HasColumnName("SEQ");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasOne(d => d.PageCodeNavigation).WithMany(p => p.Navbars)
                 .HasForeignKey(d => d.PageCode)
-                .HasConstraintName("Navbar_PageCode_fkey");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Navbar_RefPage");
         });
 
         modelBuilder.Entity<Order>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("Order_pkey");
-
             entity.ToTable("Order");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.StatusOrderCode)
+                .IsRequired()
+                .HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(d => d.StatusOrderCodeNavigation).WithMany(p => p.Orders)
+                .HasForeignKey(d => d.StatusOrderCode)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Order_StatusOrder");
         });
 
         modelBuilder.Entity<OrderDetail>(entity =>
         {
-            entity.HasKey(e => e.OrderDetailId).HasName("OrderDetail_pkey");
-
             entity.ToTable("OrderDetail");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Remark).HasMaxLength(200);
+            entity.Property(e => e.StatusOrderDetailCode)
+                .IsRequired()
+                .HasMaxLength(50);
             entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.VatRate)
+                .HasPrecision(5, 2)
+                .HasColumnName("vatRate");
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.OrderId)
-                .HasConstraintName("OrderDetail_OrderId_fkey");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_OrderDetail_Order");
 
             entity.HasOne(d => d.Product).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("OrderDetail_ProductId_fkey");
+                .HasConstraintName("FK_OrderDetail_Product");
+
+            entity.HasOne(d => d.StatusOrderDetailCodeNavigation).WithMany(p => p.OrderDetails)
+                .HasForeignKey(d => d.StatusOrderDetailCode)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_OrderDetail_StatusOrderDetail");
         });
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("Product_pkey");
-
             entity.ToTable("Product");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -211,17 +255,35 @@ public partial class connexContext : DbContext
             entity.Property(e => e.ProductName)
                 .IsRequired()
                 .HasMaxLength(200);
+            entity.Property(e => e.StatusProductCode)
+                .IsRequired()
+                .HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            entity.HasOne(d => d.Category).WithMany(p => p.Products)
+            entity.HasOne(d => d.StatusProductCodeNavigation).WithMany(p => p.Products)
+                .HasForeignKey(d => d.StatusProductCode)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Product_StatusProduct");
+        });
+
+        modelBuilder.Entity<ProductCategory>(entity =>
+        {
+            entity.ToTable("ProductCategory");
+
+            entity.HasOne(d => d.Category).WithMany(p => p.ProductCategories)
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("Product_CategoryId_fkey");
+                .HasConstraintName("FK_ProductCategory_Category");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductCategories)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductCategory_Product");
         });
 
         modelBuilder.Entity<RefPage>(entity =>
         {
-            entity.HasKey(e => e.PageCode).HasName("RefPage_pkey");
+            entity.HasKey(e => e.PageCode);
 
             entity.ToTable("RefPage");
 
@@ -236,7 +298,7 @@ public partial class connexContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleCode).HasName("Role_pkey");
+            entity.HasKey(e => e.RoleCode);
 
             entity.ToTable("Role");
 
@@ -248,12 +310,53 @@ public partial class connexContext : DbContext
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
+        modelBuilder.Entity<StatusOrder>(entity =>
+        {
+            entity.HasKey(e => e.StatusOrderCode);
+
+            entity.ToTable("StatusOrder");
+
+            entity.Property(e => e.StatusOrderCode).HasMaxLength(50);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.StatusOrderName)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        modelBuilder.Entity<StatusOrderDetail>(entity =>
+        {
+            entity.HasKey(e => e.StatusOrderDetailCode);
+
+            entity.ToTable("StatusOrderDetail");
+
+            entity.Property(e => e.StatusOrderDetailCode).HasMaxLength(50);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.StatusOrderDetailName)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        modelBuilder.Entity<StatusProduct>(entity =>
+        {
+            entity.HasKey(e => e.StatusProductCode);
+
+            entity.ToTable("StatusProduct");
+
+            entity.Property(e => e.StatusProductCode).HasMaxLength(50);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.StatusProductName)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
         modelBuilder.Entity<Token>(entity =>
         {
-            entity.HasKey(e => e.TokenId).HasName("Token_pkey");
-
             entity.ToTable("Token");
 
+            entity.Property(e => e.AccessToken).IsRequired();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.RefreshToken).IsRequired();
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -261,8 +364,6 @@ public partial class connexContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("User_pkey");
-
             entity.ToTable("User");
 
             entity.HasIndex(e => e.Username, "User_Username_key").IsUnique();
@@ -278,18 +379,30 @@ public partial class connexContext : DbContext
             entity.Property(e => e.Phone)
                 .IsRequired()
                 .HasMaxLength(15);
-            entity.Property(e => e.RoleCode)
-                .IsRequired()
-                .HasMaxLength(20);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Username)
                 .IsRequired()
                 .HasMaxLength(50);
+        });
 
-            entity.HasOne(d => d.RoleCodeNavigation).WithMany(p => p.Users)
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.ToTable("UserRole");
+
+            entity.Property(e => e.UserRoleId).ValueGeneratedNever();
+            entity.Property(e => e.RoleCode)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.HasOne(d => d.RoleCodeNavigation).WithMany(p => p.UserRoles)
                 .HasForeignKey(d => d.RoleCode)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("User_RoleCode_fkey");
+                .HasConstraintName("FK_UserRole_Role");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserRoles)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UserRole_User");
         });
 
         OnModelCreatingPartial(modelBuilder);

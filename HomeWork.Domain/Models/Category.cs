@@ -19,5 +19,5 @@ public partial class Category
 
     public int? UpdatedBy { get; set; }
 
-    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+    public virtual ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
 }

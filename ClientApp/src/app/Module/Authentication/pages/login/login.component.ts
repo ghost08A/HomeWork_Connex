@@ -17,7 +17,6 @@ import { CustomButtonComponent } from "../../../Shared/components/custom-button/
 })
 export class LoginComponent {
   // เข้าถึง dx-validation-group จาก HTML
-  @ViewChild('loginGroup', { static: false }) validationGroup!: DxValidationGroupComponent;
 
   // ผูกข้อมูลกับ Model ที่เราสร้างไว้
   formData: loginModel = {

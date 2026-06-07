@@ -13,6 +13,8 @@ public partial class MapRolePage
 
     public string RoleCode { get; set; }
 
+    public string Permission { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public int? CreatedBy { get; set; }

@@ -22,7 +22,7 @@ namespace Web.HomeWork.Controllers.Authentication
 
         [HttpPost]
         [Route("login")]
-           public async Task<IActionResult> Login([FromBody] LoginRequestModel request)
+           public async Task<IActionResult> Login(LoginRequestModel request)
         {
             var result = await _authService.LoginAsync(request);
             if(result != null)
@@ -34,10 +34,10 @@ namespace Web.HomeWork.Controllers.Authentication
 
         [HttpPost]
         [Route("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] TokenRequestModel request)
+        public async Task<IActionResult> RefreshToken()
         {
             // เรียกใช้เมธอดจาก Service
-            var result = await _authService.RefreshTokenAsync(request);
+            var result = await _authService.RefreshTokenAsync();
 
             // ส่งผลลัพธ์กลับไป
             if (result != null)
@@ -67,10 +67,20 @@ namespace Web.HomeWork.Controllers.Authentication
             return Ok(profile);
         }
 
+        [Authorize]
+        [HttpPost]
+        [Route("ReVokeAllTokens")]
+        public async Task<IActionResult> ReVokeAllTokens(int userId)
+        {
+            var result = await _authService.RevokeAllTokensAsync(userId);
+            if (result)
+                return Ok(new { message = "ยกเลิกโทเค็นทั้งหมดสำเร็จ" });
+            return BadRequest(new { message = "ไม่สามารถยกเลิกโทเค็นได้" });
+        }
 
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequestModel request)
+        public async Task<IActionResult> Register(RegisterRequestModel request)
         {
             var resultMessage = await _authService.RegisterAsync(request);
 

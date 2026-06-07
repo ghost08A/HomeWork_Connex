@@ -11,7 +11,7 @@ public partial class LogProduct
 
     public int? ProductId { get; set; }
 
-    public int? CategoryId { get; set; }
+    public string Action { get; set; }
 
     public string ProductName { get; set; }
 
@@ -19,7 +19,11 @@ public partial class LogProduct
 
     public string Detail { get; set; }
 
+    public int Quantity { get; set; }
+
     public string ImagePath { get; set; }
+
+    public string StatusProductCode { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

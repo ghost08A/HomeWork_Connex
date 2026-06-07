@@ -8,7 +8,7 @@ namespace HomeWork.Domain.Interfaces.Services.AuthService
     {
         Task<LoginResponseModel> LoginAsync(LoginRequestModel request);
 
-        Task<LoginResponseModel> RefreshTokenAsync(TokenRequestModel request);
+        Task<LoginResponseModel> RefreshTokenAsync();
 
         Task<bool> LogoutAsync();
 
@@ -17,5 +17,7 @@ namespace HomeWork.Domain.Interfaces.Services.AuthService
         Task<UserProfileResponseModel> GetCurrentUserProfileAsync();
 
         Task<string> RegisterAsync(RegisterRequestModel request);
+
+        Task<bool> RevokeAllTokensAsync(int userId);
     }
 }

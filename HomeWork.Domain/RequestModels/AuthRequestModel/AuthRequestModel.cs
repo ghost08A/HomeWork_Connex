@@ -14,6 +14,7 @@ namespace HomeWork.Domain.RequestModels.AuthRequestModel
     {
         public int userId { get; set; }
         public string accessToken { get; set; }
+
     }
 
     public class RegisterRequestModel

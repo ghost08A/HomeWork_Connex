@@ -7,7 +7,7 @@ namespace Web.HomeWork.Controllers.NavbarController
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // บังคับต้องแนบ Token
+    [Authorize] // บังคับว่าต้องล็อกอินเท่านั้นถึงจะเรียก API ดึงเมนูได้
     public class NavbarController : ControllerBase
     {
         private readonly INavbarService _navbarService;
@@ -17,7 +17,7 @@ namespace Web.HomeWork.Controllers.NavbarController
             _navbarService = navbarService;
         }
 
-        [HttpGet("my-menus")]
+        [HttpGet("menus")]
         public async Task<IActionResult> GetMyMenus()
         {
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -27,10 +27,10 @@ namespace Web.HomeWork.Controllers.NavbarController
                 return Unauthorized(new { message = "ไม่พบสิทธิ์การใช้งานในระบบ" });
             }
 
-            // 🌟 2. ส่ง RoleCode ไปให้ Service ค้นหาเมนู
-            var menus = await _navbarService.GetMenusByRoleAsync(userRole);
+            // เรียกใช้บริการเพื่อดึงเมนูตามบทบาทของผู้ใช้
+            var menus = await _navbarService.GetMenusByRoleAsync();
 
-            // 🌟 3. ส่ง JSON List กลับไปให้หน้าบ้าน
+            //  ส่ง JSON List กลับไปให้หน้าบ้าน
             return Ok(menus);
         }
 

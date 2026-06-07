@@ -3,10 +3,11 @@ import { Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../Module/Authentication/service/auth.service';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { NavigationModel } from './models/navigation.model';
+import { HomeComponent } from '../../Module/home/pages/home/home.component';
 
 @Component({
   selector: 'app-post-login-layout',
-  imports: [RouterOutlet,NavbarComponent,],
+  imports: [RouterOutlet,NavbarComponent,HomeComponent],
   templateUrl: './post-login-layout.component.html',
   styleUrl: './post-login-layout.component.scss',
 })
@@ -23,6 +24,7 @@ export class PostLoginLayoutComponent {
       { pageName: 'หน้าหลัก', pageUrl: '/home', seq: 1 }, // ตัวนี้ seq=1 ต้องถูกดึงขึ้นมาอันแรกสุด
     ];
   }
+  
 
  
 }

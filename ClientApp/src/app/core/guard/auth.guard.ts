@@ -8,9 +8,14 @@ export const authGuard: CanActivateFn = (route, state) => {
     const router = inject(Router);
     const platformId = inject(PLATFORM_ID);
 
+    console.log('AuthGuard: Checking authentication for route:', state.url);
+
     // ถ้ามี Token ถือว่าล็อกอินแล้ว อนุญาตให้ผ่านได้ (return true)
     if(isPlatformBrowser(platformId)){
+        console.log('isPlatformBrowser', isPlatformBrowser(platformId));
+        
         if (authService.isLoggedIn()) {
+                console.log('AuthGuard: User is logged in, allowing access to route:', state.url);
                 return true;
             }
     }
@@ -19,8 +24,11 @@ export const authGuard: CanActivateFn = (route, state) => {
     return authService.fetchGetProfile().pipe(
         map(user => {
             if (user) {
+                console.log('AuthGuard: User profile fetched successfully, allowing access to route:', state.url);
                 return true; // ถ้าได้ข้อมูลผู้ใช้กลับมา แสดงว่า Token ยังใช้ได้ อนุญาตให้ผ่าน
             }else{
+                console.log('not found user');
+                
                 router.navigate(['/auth/login']); // ถ้าไม่ได้ข้อมูลผู้ใช้ แสดงว่า Token หมดอายุหรือไม่ถูกต้อง ให้ไปหน้า Login
                 return false;
             }

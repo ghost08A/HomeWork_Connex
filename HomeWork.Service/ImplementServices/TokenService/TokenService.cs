@@ -33,8 +33,17 @@ namespace HomeWork.Service.ImplementServices.TokenService
             {
                 new Claim("userId", userData.UserId.ToString()),
                 new Claim(ClaimTypes.Name, userData.Username ?? ""),
-                new Claim(ClaimTypes.Role, userData.RoleCode)
+               
             };
+
+            //  วนลูปใส่สิทธิ์ทั้งหมดที่ User มี (รองรับหลายสิทธิ์)
+            if (userData.Roles != null && userData.Roles.Any())
+            {
+                foreach (var role in userData.Roles)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, role));
+                }
+            }
 
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
@@ -60,13 +69,13 @@ namespace HomeWork.Service.ImplementServices.TokenService
         {
             var user = _http.HttpContext?.User;
             if (user == null) throw new Exception("User not found in HttpContext");
-
+           
             return new JwtTokenModel
             {
                 UserId = int.Parse(
                     user.FindFirst("userId")?.Value ?? throw new Exception("userId claim not found")),
                 Username = user.FindFirst(ClaimTypes.Name)?.Value ?? throw new Exception("Username claim not found"),
-                RoleCode = user.FindFirst(ClaimTypes.Role)?.Value ?? throw new Exception("Role claim not found"),
+                Roles = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList() // ดึงสิทธิ์ทั้งหมดที่ User มี.Select
             };
         }
         public void SetHttpToken(SetTokenRequest param)
@@ -74,7 +83,7 @@ namespace HomeWork.Service.ImplementServices.TokenService
             var response = _http.HttpContext?.Response;
             if (response == null) throw new Exception("HttpContext Response is null");
 
-            DateTime exprToken = DateTime.UtcNow.AddMinutes(2);
+            DateTime exprToken = DateTime.UtcNow.AddDays(7);
             var cookieOptions = new CookieOptions
             {
                 Expires = exprToken,
@@ -105,7 +114,7 @@ namespace HomeWork.Service.ImplementServices.TokenService
         public AccessTokenViewModel GetCurrentToken()
         {
             string accessToken = _http.HttpContext?.Request.Cookies["accessToken"] ?? throw new Exception("Access token not found in cookies");
-            String refreshToken = _http.HttpContext?.Request.Cookies["refreshToken"] ?? throw new Exception("Refresh token not found in cookies");
+            string refreshToken = _http.HttpContext?.Request.Cookies["refreshToken"] ?? throw new Exception("Refresh token not found in cookies");
 
             return new AccessTokenViewModel
             {

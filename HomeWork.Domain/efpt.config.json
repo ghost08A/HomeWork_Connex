@@ -23,6 +23,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "public.LogError",
+         "ObjectType": 0
+      },
+      {
          "Name": "public.LogOrder",
          "ObjectType": 0
       },
@@ -59,6 +63,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "public.ProductCategory",
+         "ObjectType": 0
+      },
+      {
          "Name": "public.RefPage",
          "ObjectType": 0
       },
@@ -67,11 +75,27 @@
          "ObjectType": 0
       },
       {
+         "Name": "public.StatusOrder",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.StatusOrderDetail",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.StatusProduct",
+         "ObjectType": 0
+      },
+      {
          "Name": "public.Token",
          "ObjectType": 0
       },
       {
          "Name": "public.User",
+         "ObjectType": 0
+      },
+      {
+         "Name": "public.UserRole",
          "ObjectType": 0
       }
    ],

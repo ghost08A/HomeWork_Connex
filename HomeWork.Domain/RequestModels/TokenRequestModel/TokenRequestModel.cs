@@ -13,7 +13,7 @@ namespace HomeWork.Domain.RequestModels.RefreshTokenRequestModel
     {
         public int UserId { get; set; }
         public string Username { get; set; }
-        public string RoleCode { get; set; } 
+        public List<string> Roles { get; set; }
     }
 
     public class SetTokenRequest

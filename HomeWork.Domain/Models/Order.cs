@@ -9,7 +9,7 @@ public partial class Order
 {
     public int OrderId { get; set; }
 
-    public DateTime? CancelAt { get; set; }
+    public string StatusOrderCode { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -20,4 +20,6 @@ public partial class Order
     public int? UpdatedBy { get; set; }
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+
+    public virtual StatusOrder StatusOrderCodeNavigation { get; set; }
 }

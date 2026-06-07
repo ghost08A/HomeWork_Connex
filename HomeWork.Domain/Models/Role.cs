@@ -19,9 +19,7 @@ public partial class Role
 
     public int? UpdatedBy { get; set; }
 
-    public virtual ICollection<LogUser> LogUsers { get; set; } = new List<LogUser>();
-
     public virtual ICollection<MapRolePage> MapRolePages { get; set; } = new List<MapRolePage>();
 
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

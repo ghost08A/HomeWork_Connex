@@ -18,13 +18,26 @@ export class AuthService {
 
     constructor(private http: HttpClient) {}
 
-   public login(data: loginModel): Observable<any> {
-    return this.http.post(this.apiUrl+ '/Auth/login', data,{withCredentials:true}).pipe(
-      tap(() => {
-        this.fetchGetProfile().subscribe();
-      })
-    );
-  }
+  public login(data: loginModel): Observable<any> {
+    
+    // 1. สร้างตั๋วพัสดุ (Observable) เตรียมส่ง Username/Password ไปให้หลังบ้าน
+    return this.http.post(this.apiUrl+ '/Auth/login', data, {withCredentials:true})
+    
+      // 2. เอาพัสดุขากลับ (ผลการ Login) เข้าสายพาน (pipe) เพื่อดักรอก่อนส่งกลับไปหน้า UI
+      .pipe(
+        
+        // 3. ใช้เครื่องแอบดู (tap) ดักว่า: 
+        // "ถ้าหลังบ้านตอบกลับมาว่าล็อกอินสำเร็จนะ... ให้แอบไปทำคำสั่งข้างในวงเล็บนี้หน่อย"
+        tap(() => {
+            
+          // 4. คำสั่งแทรกซ้อน: สั่งให้ไปดึงข้อมูลโปรไฟล์ (fetchGetProfile)
+          // ⚠️ สาเหตุที่ต้องมี .subscribe() ตรงนี้ เพราะ fetchGetProfile() ก็เป็นพัสดุ (Observable) อีกกล่องนึง!
+          // ถ้าไม่สั่ง subscribe() ขนส่งก็จะไม่ยอมวิ่งไปดึงข้อมูลโปรไฟล์มาให้ครับ
+          this.fetchGetProfile().subscribe();
+          
+        })
+      );
+}
 
   //  เอาไว้ดึงข้อมูลส่วนตัว (เรียกใช้ตอนโหลดหน้าเว็บ หรือหลังล็อกอิน)
   public fetchGetProfile(): Observable<any> {

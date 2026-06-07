@@ -5,16 +5,16 @@ import { authGuard } from './core/guard/auth.guard';
 export const routes: Routes =  [  
 // 1. Pre-login layout routes
 {
-  path: '',
+  path: 'auth',
   loadComponent: () => import('./layouts/pre-login-layout/pre-login-layout.component').then(m => m.PreLoginLayoutComponent),
   children: [
-    { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
+    { path: '', redirectTo: 'login', pathMatch: 'full' },
     {
-      path: 'auth/login',
+      path: 'login',
       loadComponent: () => import('./Module/Authentication/pages/login/login.component').then(c => c.LoginComponent)
     },
     {
-      path: 'auth/register',
+      path: 'register',
       loadComponent: () => import('./Module/Authentication/pages/register/register.component').then(c => c.RegisterComponent)
     }
   ]
@@ -26,6 +26,7 @@ export const routes: Routes =  [
   loadComponent: () => import('./layouts/post-login-layout/post-login-layout.component').then(m => m.PostLoginLayoutComponent),
   canActivate: [authGuard],
   children: [
+    { path: '', redirectTo: 'home', pathMatch: 'full' },
     {
       path: 'home',
       loadComponent: () => import('./Module/home/pages/home/home.component').then(c => c.HomeComponent)
@@ -36,7 +37,7 @@ export const routes: Routes =  [
 // 3. Wildcard route for 404 - Not Found
 {
   path: '**',
-  redirectTo: 'auth/login'
+  redirectTo: 'home'
 }
 
 ];

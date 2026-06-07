@@ -11,6 +11,8 @@ public partial class LogUser
 
     public int? UserId { get; set; }
 
+    public string Action { get; set; }
+
     public string Username { get; set; }
 
     public string PasswordHash { get; set; }
@@ -25,8 +27,6 @@ public partial class LogUser
 
     public DateOnly? BirthDate { get; set; }
 
-    public string RoleCode { get; set; }
-
     public DateTime CreatedAt { get; set; }
 
     public int? CreatedBy { get; set; }
@@ -34,6 +34,4 @@ public partial class LogUser
     public DateTime? UpdatedAt { get; set; }
 
     public int? UpdatedBy { get; set; }
-
-    public virtual Role RoleCodeNavigation { get; set; }
 }

@@ -13,11 +13,21 @@ public partial class LogOrderDetail
 
     public int? OrderId { get; set; }
 
-    public int? ProductId { get; set; }
+    public string Action { get; set; }
+
+    public int ProductId { get; set; }
+
+    public int Seq { get; set; }
+
+    public string StatusOrderDetailCode { get; set; }
+
+    public string Remark { get; set; }
+
+    public decimal VatRate { get; set; }
 
     public decimal UnitPrice { get; set; }
 
-    public int Amount { get; set; }
+    public int Quantity { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
