@@ -116,5 +116,4 @@ static void RegisterDIForCustomerService(WebApplicationBuilder builder)
         if (implement != null && implement.Name != "CacheService")
             builder.Services.AddScoped(@interface, implement);
     }
-
 }

@@ -4,15 +4,24 @@ import { Injectable } from "@angular/core";
     providedIn: "root"
 })
 export class GuardService {
-    private permission: any;
+    private permission: string = ''; // เก็บแค่ 'r', 'rw' หรือ ''
 
     constructor() {}
-    // Set the permission value
-    public setPermission(permission: any): void {
-        this.permission = permission;
+    
+    // เก็บสิทธิ์เมื่อ Guard ยืนยันว่าเข้าได้
+    public setPermission(permission: string): void { 
+        this.permission = permission; 
     }
-    // Get the permission value
-    public getPermission(): any {
-        return this.permission;
+    
+    // ดึงสิทธิ์ไปใช้งาน (ถ้าต้องการค่าดิบ)
+    public getPermission(): string { 
+        return this.permission; 
     }
+    
+    // เอาไว้ให้ไฟล์ HTML เช็คเพื่อเปิด/ปิดปุ่มอย่างรวดเร็ว (@if (guardService.canWrite()))
+    public canWrite(): boolean { 
+        return this.permission === 'rw'; 
+    }
+    
+    
 }

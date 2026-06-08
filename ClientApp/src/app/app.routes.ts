@@ -3,7 +3,7 @@ import { authGuard } from './core/guard/auth.guard';
 import { PreLoginLayoutComponent } from './layouts/pre-login-layout/pre-login-layout.component';
 import { PostLoginLayoutComponent } from './layouts/post-login-layout/post-login-layout.component';
 import { AuthenticationRoute } from './Module/Shared/routers/authentication.const';
-
+import { permissionGuard } from './core/guard/permission.guard';
 export const routes: Routes = [
   // Redirect empty path to the default authentication route (e.g., 'auth/login')
   {
@@ -28,7 +28,7 @@ export const routes: Routes = [
   {
     path: '',
     component: PostLoginLayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [authGuard,permissionGuard],
     children: [
       {
         path: '',

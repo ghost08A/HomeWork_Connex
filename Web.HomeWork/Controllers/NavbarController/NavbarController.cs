@@ -28,7 +28,7 @@ namespace Web.HomeWork.Controllers.NavbarController
             }
 
             // เรียกใช้บริการเพื่อดึงเมนูตามบทบาทของผู้ใช้
-            var menus = await _navbarService.GetMenusByRoleAsync();
+            var menus = await _navbarService.GetNavBar();
 
             //  ส่ง JSON List กลับไปให้หน้าบ้าน
             return Ok(menus);

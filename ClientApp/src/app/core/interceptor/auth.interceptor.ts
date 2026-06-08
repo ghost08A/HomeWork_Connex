@@ -37,18 +37,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         // แอบไปเรียก API ขอ Refresh Token
         return authService.refreshToken().pipe(
           switchMap((res) => {
-            // สมมติว่าหลังบ้านส่ง Token ใหม่กลับมาใน body ให้เซ็ตลง localStorage ด้วย
-            if (res && res.token) {
-              localStorage.setItem('token', res.token);
-              // โคลน Request อีกรอบเพื่ออัปเดต Token ตัวใหม่ล่าสุดก่อนยิงซ้ำ
-              authReq = req.clone({
-                withCredentials: true,
-                setHeaders: { Authorization: `Bearer ${res.token}` }
-              });
-            }
-            
-            // ส่ง Request เดิมที่เคยพัง ไปใหม่อีกรอบ!
-            return next(authReq);
+            const retryReq = req.clone({
+              withCredentials: true, // แนบ Cookie ไปด้วยเหมือนเดิม
+            });
+            return next(retryReq);
           }),
           catchError((refreshErr) => {
             // ถ้า Refresh Token ก็หมดอายุ หรือตายสนิท -> เตะกลับหน้า Login

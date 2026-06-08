@@ -7,6 +7,8 @@ namespace HomeWork.Domain.Interfaces.Services.NavbarService
 {
     public interface INavbarService
     {
-        Task<List<NavbarResponseModel>> GetMenusByRoleAsync();
+        Task<List<NavbarResponseModel>> GetNavBar();
+
+        
     }
 }

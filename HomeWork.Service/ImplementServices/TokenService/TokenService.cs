@@ -1,4 +1,5 @@
-﻿using HomeWork.Domain.Interfaces.Services.TokenService;
+﻿using HomeWork.Domain.Enums;
+using HomeWork.Domain.Interfaces.Services.TokenService;
 using HomeWork.Domain.RequestModels.RefreshTokenRequestModel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -16,6 +17,7 @@ namespace HomeWork.Service.ImplementServices.TokenService
     {
         private readonly IHttpContextAccessor _http;
         private readonly IConfiguration _config;
+        
 
         public TokenService(IHttpContextAccessor http, IConfiguration config)
         {
@@ -25,7 +27,7 @@ namespace HomeWork.Service.ImplementServices.TokenService
 
         public string GenerateToken(JwtTokenModel userData)
         {
-            DateTime expiresAt = DateTime.UtcNow.AddMinutes(2);
+            DateTime expiresAt = DateTime.UtcNow.AddMinutes(EnumToken.expiresAccessTokenMin);
             SymmetricSecurityKey securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
@@ -83,7 +85,7 @@ namespace HomeWork.Service.ImplementServices.TokenService
             var response = _http.HttpContext?.Response;
             if (response == null) throw new Exception("HttpContext Response is null");
 
-            DateTime exprToken = DateTime.UtcNow.AddDays(7);
+            DateTime exprToken = DateTime.UtcNow.AddDays(EnumToken.expiresCookieDay);
             var cookieOptions = new CookieOptions
             {
                 Expires = exprToken,

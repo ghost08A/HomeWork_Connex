@@ -1,0 +1,37 @@
+.home-container {
+    min-height:  100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 16px;
+    animation: fadeIn 1s ease-in-out;
+}
+
+.greeting-title {
+    font-size: 40px;
+    font-weight: 900;
+   color: #1e293b; 
+  letter-spacing: -0.025em;
+  margin-bottom: 16px;
+
+  @media (min-width: 768px) {
+    font-size: 56px;
+  }
+}
+
+.highlight-name {
+  color: #2563eb;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -8,13 +8,9 @@ import { GuardService } from '../../Module/Shared/services/guard.service';
 export const authGuard: CanActivateFn = (route, state) => {
     const authService = inject(AuthService);
 
-    const router = inject(Router);
-    const guardService = inject(GuardService);
-    
+    const router = inject(Router);    
     return authService.fetchGetProfile().pipe(
         map((profileRes) => {
-            guardService.setPermission(profileRes.roles); // เก็บข้อมูลสิทธิ์ไว้ใน GuardService
-            // อนุญาตให้เข้าถึงหน้าเพจได้ (ถ้าถึงตรงนี้ได้แสดงว่า Token ยังไม่หมดอายุ และดึงข้อมูลโปรไฟล์มาได้สำเร็จ)
             return true;
         }),
         catchError(() => {

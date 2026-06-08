@@ -18,13 +18,13 @@
       <div class="desktop-nav-container">
         
         <div class="desktop-links">
-          @for (item of sortedMenuItems; track item.pageUrl) {
+          @for (item of sortedMenuItems; track item.pageURL) {
             <a 
-              [routerLink]="item.pageUrl"
+              [routerLink]="'/' + item.pageURL" 
               routerLinkActive="active-link"
               [routerLinkActiveOptions]="{ exact: true }"
               class="desktop-menu-item">
-              {{ item.pageName }}
+              {{ item.navbarName }} 
             </a>
           }
         </div>
@@ -47,9 +47,12 @@
 @if (isMobileMenuOpen) {
   <div class="mobile-menu-panel">
     <div class="menu-links">
-      @for(item of sortedMenuItems; track item.pageUrl) {
-       <button class="mobile-menu-item">
-        {{ item.pageName }}
+      @for(item of sortedMenuItems; track item.pageURL) {
+       <button 
+         class="mobile-menu-item"
+         [routerLink]="'/' + item.pageURL"
+         (click)="toggleMobileMenu()">
+        {{ item.navbarName }}
        </button>
       }
     </div>
@@ -59,8 +62,8 @@
         text="ออกจากระบบ"
         type="danger"
         stylingMode="outlined"
+        width="100%"
         (onClick)="onLogout()">
-        width="100%">
       </app-custom-button>
     </div>
   </div>
