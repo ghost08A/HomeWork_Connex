@@ -6,6 +6,6 @@ export const HOME_ROUTES: Routes = [
   {
     path: '',
     component: HomeComponent,
-    data: { pageCode: HomeRoute.pageCode }
+
   },
 ];

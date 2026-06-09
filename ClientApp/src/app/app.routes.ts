@@ -4,6 +4,12 @@ import { PreLoginLayoutComponent } from './layouts/pre-login-layout/pre-login-la
 import { PostLoginLayoutComponent } from './layouts/post-login-layout/post-login-layout.component';
 import { AuthenticationRoute } from './Module/Shared/routers/authentication.const';
 import { permissionGuard } from './core/guard/permission.guard';
+import { ProductRoute } from './Module/Shared/routers/product.const';
+import { HomeRoute } from './Module/Shared/routers/home.const';
+import { MemberRoute } from './Module/Shared/routers/member.const';
+import { MyOrderRoute } from './Module/Shared/routers/myOrder.const';
+import { AdminOrderRoute } from './Module/Shared/routers/adminOrder.const';
+
 export const routes: Routes = [
   // Redirect empty path to the default authentication route (e.g., 'auth/login')
   {
@@ -32,13 +38,29 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'home',
+        redirectTo: HomeRoute.prefix,
         pathMatch: 'full',
       },
       {
-        path: 'home',
+        path: HomeRoute.prefix,
         loadChildren: () => import('./Module/home/home.routes').then(m => m.HOME_ROUTES)
       },
+      {
+        path: ProductRoute.prefix,
+        loadChildren: () => import('./Module/product/product.routes').then(m => m.PRODUCT_ROUTES)
+      },
+      {
+        path: MemberRoute.prefix,
+        loadChildren: () => import('./Module/member/member.routes').then(m => m.MEMBER_ROUTES)
+      },
+      {
+        path: MyOrderRoute.prefix,
+        loadChildren: () => import('./Module/my-order/my-order.routes').then(m => m.MY_ORDER_ROUTES)
+      },
+      {
+        path: AdminOrderRoute.prefix,
+        loadChildren: () => import('./Module/admin-order/admin-order.routes').then(m => m.ADMIN_ORDER_ROUTES)
+      }
     ],
   },
 

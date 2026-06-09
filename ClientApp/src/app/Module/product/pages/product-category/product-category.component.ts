@@ -1,0 +1,9 @@
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'product-category',
+  imports: [],
+  templateUrl: './product-category.component.html',
+  styleUrl: './product-category.component.scss',
+})
+export class ProductCategoryComponent {}

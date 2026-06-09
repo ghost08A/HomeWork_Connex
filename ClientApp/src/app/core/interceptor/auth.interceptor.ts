@@ -17,20 +17,18 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
       
-      // 🌐 เคส: เน็ตหลุด / เซิร์ฟเวอร์ตาย
+     
       if (error.status === 0 || error.status === 500) {
         router.navigate(['/network-error']);
         return throwError(() => error);
       }
 
-      // 🔄 เคส: 401 Unauthorized (Token หมดอายุ)
       if (error.status === 401) {
         
-        // 💡 [ป้องกัน Infinite Loop] 
-        // ถ้า API ที่พังคือ API ขอ Refresh Token หรือ Login แปลว่าพังของจริง ห้ามยิงซ้ำ! ให้เตะออกเลย
-        if (req.url.includes('/Auth/refresh-token') || req.url.includes('/Auth/login')) {
-          authService.logout().subscribe(); // ล้างสิทธิ์
-          router.navigate(['/unauthorized']);
+       
+        if (req.url.includes('/Auth/refresh-token') || req.url.includes('/Auth/login') || req.url.includes('/Auth/logout')) {
+          authService.clearLocalSession();
+          router.navigate(['/auth/login']);
           return throwError(() => error);
         }
 
@@ -44,8 +42,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           }),
           catchError((refreshErr) => {
             // ถ้า Refresh Token ก็หมดอายุ หรือตายสนิท -> เตะกลับหน้า Login
-            authService.logout().subscribe();
-            router.navigate(['/unauthorized']);
+            authService.clearLocalSession();
+            // router.navigate(['/unauthorized']);
+            router.navigate(['/auth/login']);
             return throwError(() => refreshErr);
           })
         );

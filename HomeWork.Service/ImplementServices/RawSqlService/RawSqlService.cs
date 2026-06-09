@@ -38,10 +38,8 @@ namespace HomeWork.Service.ImplementServices.RawSqlServices
 
             using var connection = _context.Database.GetDbConnection();
 
-            var menus = await connection.QueryAsync<NavbarResponseModel>(
-            sql,
-            new { Roles = userRoles } // Dapper จะแปลง List เป็น Array ให้ PostgreSQL อัตโนมัติผ่าน ANY()
-        );
+            var menus = await connection.QueryAsync<NavbarResponseModel>(sql,new { Roles = userRoles });// Dapper จะแปลง List เป็น Array ให้ PostgreSQL อัตโนมัติผ่าน ANY()
+
 
             return menus.ToList();
         }

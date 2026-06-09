@@ -1,6 +1,6 @@
 <nav class="main-navbar">
   <div class="navbar-logo">
-    <span class="logo-text">Connex</span>
+    <span class="logo-text">Arm Store App</span>
   </div>
 
   <div class="navbar-actions">
@@ -16,9 +16,9 @@
 
     <div class="desktop-menu">
       <div class="desktop-nav-container">
-        
-        <div class="desktop-links">
-          @for (item of sortedMenuItems; track item.pageURL) {
+        @if(sortedMenuItems$ | async; as items) {
+          <div class="desktop-links">
+          @for (item of items; track item.pageURL) {
             <a 
               [routerLink]="'/' + item.pageURL" 
               routerLinkActive="active-link"
@@ -28,6 +28,8 @@
             </a>
           }
         </div>
+        }
+        
 
         <div class="desktop-logout">
           <app-custom-button
@@ -46,16 +48,18 @@
 
 @if (isMobileMenuOpen) {
   <div class="mobile-menu-panel">
-    <div class="menu-links">
-      @for(item of sortedMenuItems; track item.pageURL) {
-       <button 
-         class="mobile-menu-item"
-         [routerLink]="'/' + item.pageURL"
+    @if(sortedMenuItems$ | async; as items) {
+      <div class="menu-links">
+        @for(item of items; track item.pageURL) {
+          <button 
+            class="mobile-menu-item"
+            [routerLink]="'/' + item.pageURL"
          (click)="toggleMobileMenu()">
         {{ item.navbarName }}
        </button>
       }
     </div>
+  }
 
     <div class="mobile-logout-wrapper">
       <app-custom-button

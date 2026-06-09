@@ -5,6 +5,7 @@ import { loginModel, registerModel } from '../models/authentication.model';
 import { environment } from '../../../../environments/envaronment';
 import { ErrorEditorState } from '../../Shared/directives/validate-error.directive';
 import { catchErrorHandler } from '../../Shared/utils/swalHandler';
+import { UserProfileResponseModel } from '../../Shared/models/user-profile.model';
 
 @Injectable({
     providedIn: 'root'
@@ -12,35 +13,27 @@ import { catchErrorHandler } from '../../Shared/utils/swalHandler';
 export class AuthService {
     private apiUrl = environment.apiUrl ;
 
-    private currentUserSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
-    public currentUser$ = this.currentUserSubject.asObservable();
+private currentUserSubject: BehaviorSubject<UserProfileResponseModel | null> = new BehaviorSubject<UserProfileResponseModel | null>(null);    public currentUser$ = this.currentUserSubject.asObservable();
     
 
     constructor(private http: HttpClient) {}
 
   public login(data: loginModel, validateHelper?: ErrorEditorState): Observable<any> {
     
-    // 1. สร้างตั๋วพัสดุ (Observable) เตรียมส่ง Username/Password ไปให้หลังบ้าน
     return this.http.post(this.apiUrl+ '/Auth/login', data, {withCredentials:true})
     
-      // 2. เอาพัสดุขากลับ (ผลการ Login) เข้าสายพาน (pipe) เพื่อดักรอก่อนส่งกลับไปหน้า UI
       .pipe(
-        // 3. ใช้เครื่องแอบดู (tap) ดักว่า: 
-        // "ถ้าหลังบ้านตอบกลับมาว่าล็อกอินสำเร็จนะ... ให้แอบไปทำคำสั่งข้างในวงเล็บนี้หน่อย"
+      
         tap(() => {
-          // 4. คำสั่งแทรกซ้อน: สั่งให้ไปดึงข้อมูลโปรไฟล์ (fetchGetProfile)
-          // ⚠️ สาเหตุที่ต้องมี .subscribe() ตรงนี้ เพราะ fetchGetProfile() ก็เป็นพัสดุ (Observable) อีกกล่องนึง!
-          // ถ้าไม่สั่ง subscribe() ขนส่งก็จะไม่ยอมวิ่งไปดึงข้อมูลโปรไฟล์มาให้ครับ
+       
           this.fetchGetProfile().subscribe();
         }),
-        // 5. นำ Error ที่อาจเกิดขึ้นไปเข้ากระบวนการจัดการ Error ที่สร้างไว้
         this.apiPipe(validateHelper)
       );
 }
 
-  //  เอาไว้ดึงข้อมูลส่วนตัว (เรียกใช้ตอนโหลดหน้าเว็บ หรือหลังล็อกอิน)
-  public fetchGetProfile(): Observable<any> {
-    return this.http.get(this.apiUrl + '/Auth/GetProfile', { withCredentials: true }).pipe(
+  public fetchGetProfile(): Observable<UserProfileResponseModel> {
+    return this.http.get<UserProfileResponseModel>(this.apiUrl + '/Auth/GetProfile', { withCredentials: true }).pipe(
       tap((user) => {
         this.currentUserSubject.next(user); // เก็บข้อมูล User ไว้ใน State
       }),
@@ -59,6 +52,10 @@ export class AuthService {
     return this.http.post(this.apiUrl + '/Auth/refresh-token', {}, { withCredentials: true });
   }
 
+  public clearLocalSession(): void {
+    this.currentUserSubject.next(null); // เคลียร์ State
+  }
+
  
   public isLoggedIn(): boolean {
     return this.currentUserSubject.value !== null;  }
@@ -66,8 +63,11 @@ export class AuthService {
   public logout(): Observable<any> {
     return this.http.post(this.apiUrl + '/Auth/logout', {}, { withCredentials: true }).pipe(
       tap(() => {
-        this.currentUserSubject.next(null); // เคลียร์ข้อมูล User ใน State
-        localStorage.clear();
+        this.clearLocalSession(); // เคลียร์ข้อมูล User ใน State
+      }),
+      catchError((err) => {
+        this.clearLocalSession(); // เคลียร์ข้อมูล User ใน State แม้เกิด Error
+        throw err;
       })
     )
   }

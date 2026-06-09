@@ -1,17 +1,21 @@
-﻿using System.Net;
-using System.Text.Json;
+﻿using HomeWork.Domain.Models;
 using HomeWork.Domain.Share.Errors;
 using Microsoft.AspNetCore.Http; // บางทีต้องใช้สำหรับ HttpContext
+using System.Net;
+using System.Text.Json;
+using Web.HomeWork.Extensions;
 
 namespace Web.HomeWork.Middleware.ExceptionMiddleware
 {
     public class ExceptionMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly IServiceScopeFactory _scopeFactory; // เอาไว้ดัก
 
-        public ExceptionMiddleware(RequestDelegate next)
+        public ExceptionMiddleware(RequestDelegate next, IServiceScopeFactory scopeFactory)
         {
             _next = next;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task Invoke(HttpContext context)
@@ -65,6 +69,11 @@ namespace Web.HomeWork.Middleware.ExceptionMiddleware
             // 🌟 2. ดักจับ Error ร้ายแรงอื่นๆ (เช่น Database พัง)
             catch (Exception ex)
             {
+
+                
+                //บันทึกlog Error
+                await LogErrorToDatabase(context, ex);
+
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError; // ส่ง 500
 
@@ -80,5 +89,48 @@ namespace Web.HomeWork.Middleware.ExceptionMiddleware
                 await context.Response.WriteAsync(json);
             }
         }
+        private async Task LogErrorToDatabase(HttpContext context, Exception ex)
+        {
+            try
+            {
+                // ต้องสร้าง scope ใหม่ เพราะ DbContext เป็น Scoped service
+                using var scope = _scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<connexContext>();
+
+                var logError = new LogError
+                {
+                    ErrorMessage = GetRootCauseMessage(ex, maxLength: 2000),
+                    ErrorTime = DateTime.UtcNow,
+                    ErrorSource = ex.Source,                             // ชื่อ assembly ที่ error เกิด
+                    ErrorRemark = ex.StackTrace,                         // stack trace เต็ม
+                    HttpMethod = context.Request.Method,                // GET, POST, PUT, DELETE
+                    RequestUrl = context.Request.Path.ToString(),       // /api/product/1
+                    ResponseStatusCode = StatusCodes.Status500InternalServerError,
+                    CorrelationId = context.TraceIdentifier                // ID ประจำ request นี้
+                };
+
+                dbContext.LogErrors.Add(logError);
+                await dbContext.SaveChangesAsync();
+            }
+            catch 
+            {
+                
+            }
+        }
+
+        private string GetRootCauseMessage(Exception ex, int maxLength)
+        {
+            var current = ex;
+
+            // วนลงไปจนกว่าจะไม่มี InnerException แล้ว
+            while (current.InnerException != null)
+            {
+                current = current.InnerException;
+            }
+
+            // ณ จุดนี้ current คือ exception ชั้นในสุด
+            return current.Message?.Truncate(maxLength) ?? "Unknown error";
+        }
+
     }
 }
