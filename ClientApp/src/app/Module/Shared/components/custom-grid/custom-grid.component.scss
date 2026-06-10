@@ -1,0 +1,11 @@
+/* ... */
+#app-container {
+    width: 100%;
+    position: relative;
+}
+ 
+#selected-employee {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, 0);
+}

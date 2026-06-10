@@ -1,0 +1,33 @@
+<!--
+  checkbox ไม่มี layout ซับซ้อนเหมือน select/radio
+  label และ checkbox อยู่ใน dx-check-box เดียวกันเลย
+-->
+<div class="w-full">
+
+  <!--
+    dx-check-box
+    text     = ข้อความข้างๆ ปุ่ม เช่น 'ACTIVE'
+    value    = true/false
+    disabled = ปิดการใช้งาน
+  -->
+  <dx-check-box
+    [text]="label"
+    [value]="uiValue"
+    [disabled]="isDisabled"
+    [style.font-size.px]="fontSize"
+    (onValueChanged)="onValueChange($event.value)">
+  </dx-check-box>
+
+  <!-- Error messages — เหมือนทุก component -->
+  @if (attributeName && componentState.getError(attributeName).length > 0) {
+    <div class="text-red-500 text-xs mt-1 flex flex-col gap-0.5 animate-fadeIn">
+      @for (errorMsg of componentState.getError(attributeName); track $index) {
+        <div class="flex items-center gap-1">
+          <span class="inline-block w-1 h-1 bg-red-500 rounded-full"></span>
+          <span>{{ errorMsg }}</span>
+        </div>
+      }
+    </div>
+  }
+
+</div>

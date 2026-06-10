@@ -2,7 +2,6 @@
   <div class="login-card">
     <h2 class="login-title">Arm Store App</h2>
 
-    <dx-validation-group #loginGroup>
       
       <app-custom-input
         type="Text"
@@ -11,8 +10,8 @@
         placeholder="Enter Username"
         [isRequired]="true"
         [componentState]="loginState"
-        [fieldValue]="formData.Username"
-        (fieldValueChange)="onFieldValueChange('Username', $event)"
+        [fieldValue]="formData.username"
+        (fieldValueChange)="onFieldValueChange('username', $event)"
         class="mb-4 block">
       </app-custom-input>
 
@@ -23,8 +22,8 @@
         placeholder="Enter Password"
         [isRequired]="true"
         [componentState]="loginState"
-        [fieldValue]="formData.Password"
-        (fieldValueChange)="onFieldValueChange('Password', $event)"
+        [fieldValue]="formData.password"
+        (fieldValueChange)="onFieldValueChange('password', $event)"
         class="mb-6 block">
       </app-custom-input>
 
@@ -33,16 +32,15 @@
           text="เข้าสู่ระบบ" 
           type="default" 
           width="100%"
-          (onClick)="onLoginClick($event)">
+          (onClick)="onLoginClick()">
         </app-custom-button>
         <app-custom-button
           text="สมัครสมาชิก" 
           type="normal" 
           width="100%"
-          (onClick)="onRegisterClick($event)">
+          (onClick)="onRegisterClick()">
         </app-custom-button>
       </div>
 
-    </dx-validation-group>
   </div>
 </div>

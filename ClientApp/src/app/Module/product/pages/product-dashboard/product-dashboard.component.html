@@ -1,6 +1,62 @@
-<div class="min-h-screen p-4 bg-gray-100">
+<div class="min-h-screen px-8 py-4 bg-gray-100">
+  <div class="mb-4">
+    <h1>Product Dashboard</h1>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
     <div class="mb-4">
-        <h1>Product Dashboard</h1>
+      <app-custom-input
+        type="Text"
+        label="ชื่อสินค้า"
+        placeholder="กรอกชื่อสินค้า"
+        [(fieldValue)]="searchKeyword"
+        (fieldValueChange)="applyFilters()"
+      >
+      </app-custom-input>
+      <div class="mt-2">
+        <div class="flex flex-row gap-4">
+          <custom-checkbox
+            label="Active"
+            [(fieldValue)]="filterActive"
+            (fieldValueChange)="applyFilters()"
+          />
+
+          <custom-checkbox
+            label="Inactive"
+            [(fieldValue)]="filterInactive"
+            (fieldValueChange)="applyFilters()"
+          />
+        </div>
+      </div>
     </div>
-    <custom-grid></custom-grid>
+
+    <div class="mb-4">
+      <custom-tag-box
+        label="ประเภท (หลายค่า)"
+        [dataSource]="categoryOptions"
+        [(fieldValue)]="selectedCategories"
+        (fieldValueChange)="applyFilters()"
+        [showSelectionControls]="true"
+        [applyValueMode]="'useButtons'"
+        [searchEnabled]="true"
+        placeholder="เลือกประเภท (หลายค่า)"
+      >
+      </custom-tag-box>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    @for (item of filteredProducts; track item.productId) {
+      <div class="p-4 border rounded shadow-sm">
+        <img [src]="item.imagePath" [alt]="item.productName" class="w-full h-auto mb-2" />
+        <h3 class="font-bold">{{ item.productName }}</h3>
+        <p>ราคา: {{ item.price }} บาท</p>
+      </div>
+    }
+
+    @if (filteredProducts.length === 0) {
+      <div class="col-span-full text-center text-gray-500 py-8">
+        ไม่พบสินค้าที่ตรงกับเงื่อนไขการค้นหา
+      </div>
+    }
+  </div>
+  <custom-grid></custom-grid>
 </div>

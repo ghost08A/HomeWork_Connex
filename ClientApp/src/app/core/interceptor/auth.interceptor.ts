@@ -8,7 +8,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // 1. โคลน Request เพื่อแนบ Cookie และ Token ไปด้วยอัตโนมัติ
+  // 1. ส่ง Request พร้อม Cookie (ให้หลังบ้านตรวจสอบ token ผ่าน cookie)
   let authReq = req.clone({
     withCredentials: true,
   });
@@ -17,33 +17,35 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
       
-     
+      // 🌐 เคส: Network Error หรือ 500 Internal Server Error
       if (error.status === 0 || error.status === 500) {
         router.navigate(['/network-error']);
         return throwError(() => error);
       }
 
+      // 🔐 เคส: 401 Unauthorized (Access Token หมดอายุ)
       if (error.status === 401) {
         
-       
+        // ✋ ถ้าเป็น Request สำหรับ Refresh Token, Login, หรือ Logout แล้ว error 401
+        // = ทั้ง Access Token และ Refresh Token หมดแล้ว -> ไปหน้า Login
         if (req.url.includes('/Auth/refresh-token') || req.url.includes('/Auth/login') || req.url.includes('/Auth/logout')) {
           authService.clearLocalSession();
           router.navigate(['/auth/login']);
           return throwError(() => error);
         }
 
-        // แอบไปเรียก API ขอ Refresh Token
+        // 🔄 พยายาม Refresh Token จาก Backend (Backend จะตรวจสอบ Refresh Token ผ่าน Cookie)
         return authService.refreshToken().pipe(
           switchMap((res) => {
+            // ✅ Refresh Token สำเร็จ -> ลอง Request เดิมอีกครั้ง (Cookie ใหม่ถูก set แล้ว)
             const retryReq = req.clone({
-              withCredentials: true, // แนบ Cookie ไปด้วยเหมือนเดิม
+              withCredentials: true,
             });
             return next(retryReq);
           }),
           catchError((refreshErr) => {
-            // ถ้า Refresh Token ก็หมดอายุ หรือตายสนิท -> เตะกลับหน้า Login
+            // ❌ Refresh Token ล้มเหลว -> ทั้ง Access Token และ Refresh Token หมดแล้ว
             authService.clearLocalSession();
-            // router.navigate(['/unauthorized']);
             router.navigate(['/auth/login']);
             return throwError(() => refreshErr);
           })
@@ -56,7 +58,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
-      // เคส Error อื่นๆ (เช่น 500, 404, 400) ปล่อยให้ Component จัดการ
+      // เคส Error อื่นๆ (เช่น 404, 400) ปล่อยให้ Component จัดการ
       return throwError(() => error);
     })
   );

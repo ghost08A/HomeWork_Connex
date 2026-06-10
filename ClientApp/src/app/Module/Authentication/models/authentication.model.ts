@@ -1,15 +1,20 @@
-export interface loginModel {
-  Username: string;
-  Password: string;
+export class RegisterModel  {
+  username: string = '';
+  password: string = '';
+  confirmPassword: string = '';
+  firstName: string = '';
+  lastName: string = '';
+  age: number = 0;
+  phone: string = '';
+  birthDate: Date | null = null;
 }
 
-export interface registerModel {
-  Username: string;
-  Password: string;
-  ConfirmPassword: string;
-  FirstName: string;
-  LastName: string;
-  Age: number;
-  Phone: string;
-  BirthDate: Date | null;
+export class LoginRequestModel {
+  username: string = '';
+  password: string = '';
+}
+
+export interface LoginModel {
+  username: string;
+  password: string;
 }

@@ -7,7 +7,6 @@
       <p class="register-description">กรุณากรอกข้อมูลเพื่อลงทะเบียนเข้าสู่ใช้งานระบบ</p>
     </div>
 
-    <dx-validation-group #registerGroup>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
         
@@ -19,7 +18,7 @@
             attributeName="username"
             [isRequired]="true"
             [componentState]="registerState"
-            [(fieldValue)]="formData.Username">
+            [(fieldValue)]="formData.username">
            
           </app-custom-input>
         </div>
@@ -31,17 +30,17 @@
           attributeName="password"
           [isRequired]="true"
           [componentState]="registerState"
-          [(fieldValue)]="formData.Password">
+          [(fieldValue)]="formData.password">
         </app-custom-input>
 
         <app-custom-input
           type="Password"
           label="Confirm Password (ยืนยันรหัสผ่าน)"
           placeholder="กรอกรหัสผ่านอีกครั้ง"
-          attributeName="confirmpassword"
+          attributeName="confirmPassword"
           [isRequired]="true"
           [componentState]="registerState"
-          [(fieldValue)]="formData.ConfirmPassword">
+          [(fieldValue)]="formData.confirmPassword">
         </app-custom-input>
 
         <app-custom-input
@@ -51,7 +50,7 @@
           attributeName="firstname"
           [isRequired]="true"
           [componentState]="registerState"
-          [(fieldValue)]="formData.FirstName">
+          [(fieldValue)]="formData.firstName">
         </app-custom-input>
 
         <app-custom-input
@@ -61,7 +60,7 @@
           attributeName="lastname"
           [isRequired]="true"
           [componentState]="registerState"
-          [(fieldValue)]="formData.LastName">
+          [(fieldValue)]="formData.lastName">
         </app-custom-input>
 
         <app-custom-input
@@ -72,7 +71,7 @@
           [min]="1"
           [isRequired]="true"
           [componentState]="registerState"
-          [(fieldValue)]="formData.Age">
+          [(fieldValue)]="formData.age">
         </app-custom-input>
 
         <app-custom-input
@@ -82,7 +81,7 @@
           attributeName="phone"
           [isRequired]="true"
           [componentState]="registerState"
-          [(fieldValue)]="formData.Phone">
+          [(fieldValue)]="formData.phone">
         </app-custom-input>
 
         <div class="md:col-span-2">
@@ -90,10 +89,10 @@
             type="Date"
             label="BirthDate (วัน/เดือน/ปี เกิด)"
             placeholder="เลือกวันเกิดของคุณ (ไม่จำเป็น)"
-            attributeName="birthdate"
+            attributeName="birthDate"
             [isRequired]="false"
             [componentState]="registerState"
-            [(fieldValue)]="formData.BirthDate">
+            [(fieldValue)]="formData.birthDate">
           </app-custom-input>
         </div>
 
@@ -107,7 +106,7 @@
             type="normal"
             stylingMode="outlined"
             width="100%"
-            (onClick)="onBackToLogin($event)">
+            (onClick)="onBackToLogin()">
           </app-custom-button>
         </div>
 
@@ -117,12 +116,9 @@
             type="default"
             stylingMode="contained"
             width="100%"
-            (onClick)="onRegisterSubmit($event)">
+            (onClick)="onRegisterSubmit()">
           </app-custom-button>
         </div>
-
       </div>
-
-    </dx-validation-group>
   </div>
 </div>

@@ -22,15 +22,32 @@ namespace Web.HomeWork.Controllers.Authentication
         [HttpPost("login")]
            public async Task<IActionResult> Login(LoginRequestModel request)
         {
-            var result = await _authService.LoginAsync(request);
-            if(result != null)
+                return Ok(await _authService.LoginAsync(request));
+          
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken()
+        {
+            // เรียกใช้เมธอดจาก Service
+            var result = await _authService.RefreshTokenAsync();
+
+            // ส่งผลลัพธ์กลับไป
+            if (result != null)
             {
                 return Ok(result);
             }
-            return Unauthorized(new { Message = "รหัสผิดเดอร์" });
+            return Unauthorized("Invalid refresh token");
         }
 
-        
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _authService.LogoutAsync();
+            return Ok(new { message = "ออกจากระบบสำเร็จ" });
+        }
+
+
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterRequestModel request)

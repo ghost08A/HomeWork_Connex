@@ -16,26 +16,9 @@ namespace Web.HomeWork.Controllers.Authentication
             _authService = authService;
         }
 
-        [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken()
-        {
-            // เรียกใช้เมธอดจาก Service
-            var result = await _authService.RefreshTokenAsync();
+        
 
-            // ส่งผลลัพธ์กลับไป
-            if (result != null)
-            {
-                return Ok(result);
-            }
-            return Unauthorized("Invalid refresh token");
-        }
-
-        [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
-        {
-            await _authService.LogoutAsync();
-            return Ok(new { message = "ออกจากระบบสำเร็จ" });
-        }
+        
 
         [HttpGet("GetProfile")]
         public async Task<IActionResult> GetProfile()

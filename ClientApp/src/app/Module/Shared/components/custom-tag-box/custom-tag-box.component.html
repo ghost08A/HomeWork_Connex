@@ -1,0 +1,70 @@
+<!-- 
+  layout และ labelPosition ทำงานเหมือน custom-select-box ทุกอย่าง
+  col (default) = label บน input ล่าง
+  row           = label ซ้าย input ขวา
+  bottom        = label ล่าง input บน (ใช้ flex-col-reverse)
+-->
+<div [class]="layout === 'row'
+    ? 'flex flex-row items-center gap-4 w-full'
+    : labelPosition === 'bottom' 
+        ? 'flex flex-col-reverse w-full' 
+        : 'w-full'">
+
+  <!-- Label -->
+  <div class="flex flex-row justify-between">
+    @if (label) {
+      <label
+        [style.font-size.px]="fontSize"
+        [class]="layout === 'row'
+          ? 'whitespace-nowrap lyt-label'
+          : labelPosition === 'bottom'
+            ? 'block mt-1 lyt-label'
+            : 'block mb-1 lyt-label'">
+        {{ label }}
+        <!-- แสดงดาวแดงถ้า isRequired = true -->
+        @if (isRequired) {
+          <span class="text-red-500">*</span>
+        }
+      </label>
+    }
+  </div>
+
+  <!-- 
+    dx-tag-box — ต่างจาก dx-select-box ตรงที่
+    1. [value] รับ array ไม่ใช่ค่าเดียว
+    2. มี showSelectionControls, applyValueMode
+    3. มี maxDisplayedTags, showMultiTagOnly
+  -->
+  <dx-tag-box
+    [dataSource]="dataSource"
+    [displayExpr]="displayExpr"
+    [valueExpr]="valueExpr"
+    [value]="uiValue"
+    [disabled]="isDisabled"
+    [placeholder]="placeholder"
+    [showClearButton]="true"
+    [searchEnabled]="searchEnabled"
+    [searchMode]="searchMode"
+    [showSelectionControls]="showSelectionControls"
+    [applyValueMode]="applyValueMode"
+    [maxDisplayedTags]="maxDisplayedTags"
+    [showMultiTagOnly]="showMultiTagOnly"
+    (onValueChanged)="onValueChange($event.value)">
+  </dx-tag-box>
+
+  <!-- 
+    Error messages — copy มาจาก custom-select-box เหมือนกันทุกอย่าง
+    แสดงเฉพาะเมื่อมี attributeName และมี error จาก componentState
+  -->
+  @if (attributeName && componentState.getError(attributeName).length > 0) {
+    <div class="text-red-500 text-xs mt-1 flex flex-col gap-0.5 animate-fadeIn">
+      @for (errorMsg of componentState.getError(attributeName); track $index) {
+        <div class="flex items-center gap-1">
+          <span class="inline-block w-1 h-1 bg-red-500 rounded-full"></span>
+          <span>{{ errorMsg }}</span>
+        </div>
+      }
+    </div>
+  }
+
+</div>

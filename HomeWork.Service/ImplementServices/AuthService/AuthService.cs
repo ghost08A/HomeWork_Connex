@@ -56,11 +56,12 @@ namespace HomeWork.Service.ImplementServices.AuthService
             {
                 error.AddError("username หรือ password ไม่ถูกต้องกรุณาลองใหม่อีกครั้ง");
                 error.ThrowIfError();
-                return null;
-
             }
 
-            user.LastCheckin = DateTime.UtcNow;
+            DateTime timeNow = DateTime.UtcNow;
+
+
+            user.LastCheckin = timeNow;
             // ให้ Shared Service ออกบัตรให้
             string accessToken, refreshToken;
             SetJWTTokenService(user, out accessToken, out refreshToken);
@@ -71,8 +72,8 @@ namespace HomeWork.Service.ImplementServices.AuthService
                 CreatedBy = user.UserId,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                AccessTokenExpiryTime = DateTime.UtcNow.AddMinutes(2),
-                RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(10)
+                AccessTokenExpiryTime = timeNow.AddMinutes(2),
+                RefreshTokenExpiryTime = timeNow.AddMinutes(10)
             };
             _context.Tokens.Add(dbToken);
            
@@ -84,6 +85,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
 
         public async Task<LoginResponseModel> RefreshTokenAsync()
         {
+            DateTime timeNow = DateTime.UtcNow;
             var oldTokens = _tokenService.GetCurrentToken();
             if (string.IsNullOrEmpty(oldTokens.RefreshToken) || string.IsNullOrEmpty(oldTokens.AccessToken))
                 return null; // ไม่มี Token ใน Cookie ให้กลับไปหน้า Login
@@ -101,7 +103,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
                 return null; // Token ถูกเพิกถอนแล้ว ให้กลับไปหน้า Login
             }
             // ตรวจสอบว่า Refresh Token หมดอายุหรือยัง
-            if (saveToken.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            if (saveToken.RefreshTokenExpiryTime <= timeNow)
             {
                 _context.Tokens.Remove(saveToken);
                 await _context.SaveChangesAsync();
@@ -120,7 +122,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
 
             saveToken.AccessToken = accessToken;
             saveToken.RefreshToken = refreshToken;
-            saveToken.AccessTokenExpiryTime = DateTime.UtcNow.AddMinutes(2);
+            saveToken.AccessTokenExpiryTime = timeNow.AddMinutes(2);
             await _context.SaveChangesAsync();
 
             return new LoginResponseModel
@@ -223,9 +225,52 @@ namespace HomeWork.Service.ImplementServices.AuthService
 
         public async Task<string> RegisterAsync(RegisterRequestModel request)
         {
-            
+
             // 1. ตรวจสอบข้อมูล (Validation Rules)
             var isUserExist = await _context.Users.AnyAsync(u => u.Username == request.Username);
+            ValidateRegister(request);
+            if (isUserExist)
+            {
+                error.AddErrorKeyAndToast("username", "Username นี้มีผู้ใช้งานแล้ว");
+            }
+            // ถ้ามี Error แม้แต่ข้อเดียว ให้ปาระเบิดออกไปเลย (Middleware จะจับให้เอง)
+            error.ThrowIfError();
+
+            // ----------------------------------------------------
+            // 3. บันทึกลง Database
+            // ----------------------------------------------------
+            DateOnly? birthDateOnly = null;
+            if (DateTime.TryParse(request.BirthDate, out DateTime parsedBirthDate))
+            {
+                birthDateOnly = DateOnly.FromDateTime(parsedBirthDate);
+            }
+
+            var newUser = new User
+            {
+                Username = request.Username,
+                PasswordHash = ComputeSHA512(request.Password), // เข้ารหัสผ่านก่อนลง DB เสมอ
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Phone = request.Phone,
+                BirthDate = birthDateOnly,
+                //RoleCode = "member", // กำหนดสิทธิ์เริ่มต้นเป็น member ธรรมดา
+                CreatedAt = DateTime.UtcNow
+            };
+            var userRole = new UserRole
+            {
+                RoleCode = "member",
+                User = newUser
+            };
+
+            _context.UserRoles.Add(userRole);
+            _context.Users.Add(newUser);
+            await _context.SaveChangesAsync();
+
+            return "สมัครสมาชิกสำเร็จ!";
+        }
+
+        private void ValidateRegister(RegisterRequestModel request)
+        {
             if (string.IsNullOrWhiteSpace(request.Username))
             {
                 error.AddErrorKeyAndToast("username", "กรุณากรอก username");
@@ -238,7 +283,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
             {
                 error.AddErrorKeyAndToast("username", "ห้ามใส่ emoji");
             }
-            
+
             // เช็ค Password ตรงกันไหม
             if (request.Password != request.ConfirmPassword)
             {
@@ -283,45 +328,8 @@ namespace HomeWork.Service.ImplementServices.AuthService
             {
                 error.AddErrorKeyAndToast("lastname", "ความยาวห้ามเกิน 200");
             }
-            if (isUserExist)
-            {
-                error.AddErrorKeyAndToast("username", "Username นี้มีผู้ใช้งานแล้ว");
-            }
-            // ถ้ามี Error แม้แต่ข้อเดียว ให้ปาระเบิดออกไปเลย (Middleware จะจับให้เอง)
-            error.ThrowIfError();
-
-            // ----------------------------------------------------
-            // 3. บันทึกลง Database
-            // ----------------------------------------------------
-            DateOnly? birthDateOnly = null;
-            if (DateTime.TryParse(request.BirthDate, out DateTime parsedBirthDate))
-            {
-                birthDateOnly = DateOnly.FromDateTime(parsedBirthDate);
-            }
-
-            var newUser = new User
-            {
-                Username = request.Username,
-                PasswordHash = ComputeSHA512(request.Password), // เข้ารหัสผ่านก่อนลง DB เสมอ
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                Phone = request.Phone,
-                BirthDate = birthDateOnly,
-                //RoleCode = "member", // กำหนดสิทธิ์เริ่มต้นเป็น member ธรรมดา
-                CreatedAt = DateTime.UtcNow
-            };
-            var userRole = new UserRole
-            {
-                RoleCode = "member",
-                User = newUser
-            };
-
-            _context.UserRoles.Add(userRole);
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
-
-            return "สมัครสมาชิกสำเร็จ!";
         }
+
         public static string ComputeSHA512(string s)
         {
             StringBuilder sb = new StringBuilder();

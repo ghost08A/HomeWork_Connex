@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, catchError, MonoTypeOperatorFunction, Observable,tap } from 'rxjs';
-import { loginModel, registerModel } from '../models/authentication.model';
+import {  LoginRequestModel, RegisterModel } from '../models/authentication.model';
 import { environment } from '../../../../environments/envaronment';
 import { ErrorEditorState } from '../../Shared/directives/validate-error.directive';
 import { catchErrorHandler } from '../../Shared/utils/swalHandler';
-import { UserProfileResponseModel } from '../../Shared/models/user-profile.model';
+import { UserProfileResponseModel } from '../models/user-profile.model';
 
 @Injectable({
     providedIn: 'root'
@@ -18,7 +18,7 @@ private currentUserSubject: BehaviorSubject<UserProfileResponseModel | null> = n
 
     constructor(private http: HttpClient) {}
 
-  public login(data: loginModel, validateHelper?: ErrorEditorState): Observable<any> {
+  public login(data: LoginRequestModel, validateHelper?: ErrorEditorState): Observable<any> {
     
     return this.http.post(this.apiUrl+ '/Auth/login', data, {withCredentials:true})
     
@@ -44,7 +44,7 @@ private currentUserSubject: BehaviorSubject<UserProfileResponseModel | null> = n
     );
   }
 
-  public register(data: registerModel, validateHelper?: ErrorEditorState): Observable<any> {
+  public register(data: RegisterModel, validateHelper?: ErrorEditorState): Observable<any> {
     return this.http.post(this.apiUrl + '/Auth/register', data).pipe(this.apiPipe(validateHelper));
   }
   
