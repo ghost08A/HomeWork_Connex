@@ -233,12 +233,9 @@ namespace HomeWork.Service.ImplementServices.AuthService
             {
                 error.AddErrorKeyAndToast("username", "Username นี้มีผู้ใช้งานแล้ว");
             }
-            // ถ้ามี Error แม้แต่ข้อเดียว ให้ปาระเบิดออกไปเลย (Middleware จะจับให้เอง)
             error.ThrowIfError();
 
-            // ----------------------------------------------------
-            // 3. บันทึกลง Database
-            // ----------------------------------------------------
+
             DateOnly? birthDateOnly = null;
             if (DateTime.TryParse(request.BirthDate, out DateTime parsedBirthDate))
             {

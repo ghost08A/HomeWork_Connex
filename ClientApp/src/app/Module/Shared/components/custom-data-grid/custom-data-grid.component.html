@@ -1,0 +1,114 @@
+<dx-data-grid
+  [dataSource]="dataSource"
+  [keyExpr]="keyExpr"
+  [showBorders]="showBorders"
+  [showRowLines]="showRowLines"
+  [rowAlternationEnabled]="rowAlternationEnabled"
+  [allowColumnReordering]="allowColumnReordering"
+  [allowColumnResizing]="allowColumnResizing"
+  (onRowClick)="onRowClick($event)"
+  (onSelectionChanged)="onSelectionChanged($event)">
+
+  <!-- Search Panel -->
+  <dxo-search-panel [visible]="showSearchPanel"></dxo-search-panel>
+
+  <!-- Paging -->
+  <dxo-paging [pageSize]="pageSize"></dxo-paging>
+  <dxo-pager
+    [visible]="showPager"
+    [showPageSizeSelector]="true"
+    [allowedPageSizes]="[5, 10, 20, 50]">
+  </dxo-pager>
+
+  <!-- Column Fixing — เปิดไว้เสมอเผื่อใช้ -->
+  <dxo-column-fixing [enabled]="true"></dxo-column-fixing>
+
+  <!--
+    วน loop สร้าง column จาก array ที่หน้าบ้านส่งมา
+    ถ้า col.cellTemplate มีค่า = ใช้ template พิเศษ
+    ถ้าไม่มี = แสดงข้อมูลปกติ
+  -->
+  @for (col of columns; track col.dataField) {
+    <dxi-column
+      [dataField]="col.dataField"
+      [caption]="col.caption ?? col.dataField"
+      [dataType]="col.dataType ?? 'string'"
+      [alignment]="col.alignment ?? 'left'"
+      [width]="col.width ?? undefined"
+      [fixed]="col.fixed ?? false"
+      [fixedPosition]="col.fixedPosition ?? 'left'"
+      [visible]="col.visible ?? true"
+      [format]="col.format ?? undefined"
+      [cellTemplate]="col.cellTemplate ?? undefined">
+    </dxi-column>
+  }
+
+  <!--
+    Column จัดการ — แสดงเฉพาะถ้ามี actionButtons
+    fixed right = ล็อกติดขวาเสมอแม้ scroll
+  -->
+  @if (actionButtons.length > 0) {
+    <dxi-column
+      [caption]="actionColumnCaption"
+      [width]="actionColumnWidth"
+      alignment="center"
+      [fixed]="true"
+      fixedPosition="right"
+      cellTemplate="actionCellTemplate">
+    </dxi-column>
+  }
+
+  <!--
+    Template column จัดการ
+    ใช้ app-custom-button แทน dx-button โดยตรง
+    วน loop actionButtons และเช็ค visible ก่อนแสดง
+  -->
+  <div *dxTemplate="let cell of 'actionCellTemplate'">
+    <div class="flex flex-row gap-1 justify-center">
+      @for (btn of actionButtons; track $index) {
+        @if (isButtonVisible(btn, cell.data)) {
+
+          <!--
+            ใช้ app-custom-button ที่มีอยู่แล้ว
+            ส่ง property ตรงๆ จาก ActionButton interface
+            (onClick) รับ event แล้วเรียก btn.onClick พร้อมส่ง rowData
+          -->
+          <app-custom-button
+            [text]="btn.text ?? ''"
+            [icon]="btn.icon ?? ''"
+            [type]="btn.type ?? 'default'"
+            [stylingMode]="btn.stylingMode ?? 'contained'"
+            [width]="btn.width ?? 'auto'"
+            [disabled]="btn.disabled ?? false"
+            (onClick)="btn.onClick(cell.data)">
+          </app-custom-button>
+
+        }
+      }
+    </div>
+  </div>
+
+  <!--
+    Master-Detail — ตารางซ้อน
+    เปิดเมื่อ hasDetailRow = true และมี masterDetailTemplate
+    กดปุ่ม ▶ ที่แถว = ขยาย detail ลงมาใต้แถวนั้น
+  -->
+  @if (hasDetailRow && masterDetailTemplate) {
+    <dxo-master-detail
+      [enabled]="true"
+      template="detailTemplate">
+    </dxo-master-detail>
+
+    <!--
+      รับ ng-template จากหน้าบ้านมา render ใน detail row
+      detail.data = ข้อมูลของ master row (แถวหลัก)
+      หน้าบ้านรับ data ผ่าน let-data แล้วใช้ต่อได้เลย
+    -->
+    <div *dxTemplate="let detail of 'detailTemplate'">
+      <ng-container
+        *ngTemplateOutlet="masterDetailTemplate; context: { $implicit: detail.data }">
+      </ng-container>
+    </div>
+  }
+
+</dx-data-grid>

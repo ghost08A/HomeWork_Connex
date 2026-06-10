@@ -1,14 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { CustomGridComponent } from '../../../Shared/components/custom-grid/custom-grid.component';
-import { valueOption } from '../../../Shared/models/typecustom.model';
+import { ActionButton, ColumnConfig, valueOption } from '../../../Shared/models/typecustom.model';
 import { CustomTagBoxComponent } from '../../../Shared/components/custom-tag-box/custom-tag-box.component';
 import { CustomInputComponent } from '../../../Shared/components/custom-input/custom-input.component';
 import { ProductList } from '../../models/product.model';
 import { CustomCheckboxComponent } from '../../../Shared/components/custom-checkbox/custom-checkbox.component';
+import { CustomDataGridComponent } from '../../../Shared/components/custom-data-grid/custom-data-grid.component';
+import { DecimalPipe } from '@angular/common';
 
 @Component({
   selector: 'product-dashboard',
-  imports: [CustomGridComponent, CustomTagBoxComponent, CustomInputComponent, CustomCheckboxComponent],
+  imports: [ DecimalPipe,CustomTagBoxComponent, CustomInputComponent, CustomCheckboxComponent,CustomDataGridComponent ],
   templateUrl: './product-dashboard.component.html',
   styleUrl: './product-dashboard.component.scss',
 })
@@ -173,6 +174,56 @@ export class ProductDashboardComponent implements OnInit {
     this.filteredProducts = [...this.allProducts];
   }
 
+  public columns: ColumnConfig[] = [
+  {
+    dataField: 'productId',
+    caption: 'รหัส',
+    dataType: 'number',
+    alignment: 'center',
+    width: 80,
+  },
+  {
+    dataField: 'productName',
+    caption: 'ชื่อสินค้า',
+    alignment: 'left',
+  },
+  {
+    dataField: 'statusProductCode',
+    caption: 'สถานะ',
+    alignment: 'center',
+    width: 120,
+    cellTemplate: 'statusTemplate', // ใช้ template สีเหมือนเดิม
+  },
+];
+
+actionButtons: ActionButton[] = [
+    {
+      text: 'แก้ไข',
+      icon: 'edit',
+      type: 'default',
+      stylingMode: 'contained',
+      onClick: (rowData) => this.onEdit(rowData),
+      // ไม่กำหนด visible = แสดงทุกแถว
+    },
+    {
+      text: 'ลบ',
+      icon: 'trash',
+      type: 'danger',
+      stylingMode: 'outlined',
+      onClick: (rowData) => this.onDelete(rowData),
+      visible: (rowData) => rowData.statusProductCode === 'INACTIVE',
+    },
+  ];
+
+  public detailColumns: ColumnConfig[] = [
+    { dataField: 'detailId',    caption: 'รหัส',         alignment: 'center', width: 80 },
+    { dataField: 'description', caption: 'รายละเอียด',   alignment: 'left'              },
+    { dataField: 'price',       caption: 'ราคา',          alignment: 'right',
+      dataType: 'number', format: '#,##0.00'                                              },
+    { dataField: 'stock',       caption: 'จำนวนคงเหลือ', alignment: 'center',
+      dataType: 'number'                                                                   },
+  ];
+
   public applyFilters(): void {
     this.filteredProducts = this.allProducts.filter(product => {
       
@@ -192,5 +243,18 @@ export class ProductDashboardComponent implements OnInit {
       return matchesSearch && matchesCategory && matchesStatus;
     });
   }
+
+  public onEdit(rowData: any): void {
+    console.log('แก้ไข:', rowData);
+    // ใส่ logic ที่ต้องการ เช่น เปิด popup หรือ navigate ไปหน้า edit
+  }
+
+  public onDelete(rowData: any): void {
+    console.log('ลบ:', rowData);
+    // ใส่ logic ที่ต้องการ เช่น เรียก API ลบ
+  }
+  public onRowClick(rowData: any): void { 
+    // ตัวอย่างการใช้งาน rowClick
+   }
   
 }

@@ -39,11 +39,10 @@
         [applyValueMode]="'useButtons'"
         [searchEnabled]="true"
         placeholder="เลือกประเภท (หลายค่า)"
-      >
-      </custom-tag-box>
+      />
     </div>
   </div>
-  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+  <!-- <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
     @for (item of filteredProducts; track item.productId) {
       <div class="p-4 border rounded shadow-sm">
         <img [src]="item.imagePath" [alt]="item.productName" class="w-full h-auto mb-2" />
@@ -57,6 +56,63 @@
         ไม่พบสินค้าที่ตรงกับเงื่อนไขการค้นหา
       </div>
     }
+  </div> -->
+  <custom-data-grid
+  [dataSource]="filteredProducts"
+  keyExpr="productId"
+  [columns]="columns"
+  [actionButtons]="actionButtons"
+  actionColumnCaption="จัดการ"
+  [actionColumnWidth]="200"
+  [hasDetailRow]="true"
+  [masterDetailTemplate]="productDetailTemplate"
+  [showSearchPanel]="true"
+  [pageSize]="10"
+  (rowClick)="onRowClick($event)">
+
+  <!-- Template สถานะ -->
+  <div *dxTemplate="let cell of 'statusTemplate'">
+    <span [class]="cell.data.statusProductCode === 'ACTIVE'
+      ? 'px-2 py-1 rounded text-xs bg-green-100 text-green-700'
+      : 'px-2 py-1 rounded text-xs bg-red-100 text-red-700'">
+      {{ cell.data.statusProductCode }}
+    </span>
   </div>
-  <custom-grid></custom-grid>
+
+  <!-- Detail Row — แสดง price, detail, quantity, image -->
+  <ng-template #productDetailTemplate let-data>
+    <div class="p-4 bg-gray-50 flex flex-row gap-6">
+
+      <!-- รูปสินค้า -->
+      <img
+        [src]="data.imagePath"
+        [alt]="data.productName"
+        class="w-32 h-32 object-cover rounded shadow">
+
+      <!-- ข้อมูล detail -->
+      <div class="flex flex-col gap-2">
+        <p class="font-semibold text-lg">{{ data.productName }}</p>
+        <p class="text-sm text-gray-600">{{ data.detail }}</p>
+        <div class="flex flex-row gap-6 mt-2">
+          <div>
+            <span class="text-xs text-gray-400">ราคา</span>
+            <p class="font-semibold text-blue-600">
+              {{ data.price | number:'1.2-2' }} บาท
+            </p>
+          </div>
+          <div>
+            <span class="text-xs text-gray-400">จำนวนคงเหลือ</span>
+            <p class="font-semibold"
+              [class.text-red-500]="data.quantity === 0"
+              [class.text-green-600]="data.quantity > 0">
+              {{ data.quantity }} ชิ้น
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </ng-template>
+
+</custom-data-grid>
 </div>
