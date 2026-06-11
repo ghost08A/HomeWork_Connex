@@ -1,25 +1,29 @@
-<div class="min-h-screen px-8 py-4 bg-gray-100">
-  <div class="mb-4">
-    <h1>Product Dashboard</h1>
+<div class="min-h-screen px-8 py-6 bg-gray-50">
+  <!-- Header Section -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-800 tracking-tight">Product Dashboard</h1>
+    <hr class="mt-4 border-gray-300" />
   </div>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-    <div class="mb-4">
-      <app-custom-input
-        type="Text"
-        label="ชื่อสินค้า"
-        placeholder="กรอกชื่อสินค้า"
-        [(fieldValue)]="searchKeyword"
-        (fieldValueChange)="applyFilters()"
-      >
-      </app-custom-input>
-      <div class="mt-2">
-        <div class="flex flex-row gap-4">
+
+  <!-- Search & Filter Card -->
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Left Column: Search & Checkboxes -->
+      <div class="flex flex-col gap-4">
+        <app-custom-input
+          type="Text"
+          label="ค้นหาสินค้า"
+          placeholder="พิมพ์ชื่อสินค้าที่ต้องการค้นหา..."
+          [(fieldValue)]="searchKeyword"
+          (fieldValueChange)="applyFilters()"
+        >
+        </app-custom-input>
+        <div class="flex flex-row gap-6 mt-2">
           <custom-checkbox
             label="Active"
             [(fieldValue)]="filterActive"
             (fieldValueChange)="applyFilters()"
           />
-
           <custom-checkbox
             label="Inactive"
             [(fieldValue)]="filterInactive"
@@ -27,92 +31,101 @@
           />
         </div>
       </div>
-    </div>
 
-    <div class="mb-4">
-      <custom-tag-box
-        label="ประเภท (หลายค่า)"
-        [dataSource]="categoryOptions"
-        [(fieldValue)]="selectedCategories"
-        (fieldValueChange)="applyFilters()"
-        [showSelectionControls]="true"
-        [applyValueMode]="'useButtons'"
-        [searchEnabled]="true"
-        placeholder="เลือกประเภท (หลายค่า)"
-      />
+      <!-- Right Column: Tag Box & Buttons -->
+      <div class="flex flex-col justify-between gap-4">
+        <custom-tag-box
+          label="ประเภทสินค้า"
+          [dataSource]="categoryOptions"
+          [(fieldValue)]="selectedCategories"
+          (fieldValueChange)="applyFilters()"
+          [showSelectionControls]="true"
+          [applyValueMode]="'useButtons'"
+          [searchEnabled]="true"
+          placeholder="เลือกประเภทสินค้า (สามารถเลือกได้หลายค่า)"
+        />
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end gap-3 mt-auto pt-4">
+          <app-custom-button
+            text="เพิ่มสินค้า"
+            icon="plus"
+            type="success"
+            stylingMode="contained"
+            (onClick)="onAddProduct()"
+          >
+          </app-custom-button>
+
+          <app-custom-button
+            text="ค้นหา"
+            icon="search"
+            type="default"
+            stylingMode="contained"
+            (onClick)="applyFilters()"
+          >
+          </app-custom-button>
+        </div>
+      </div>
     </div>
   </div>
-  <!-- <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    @for (item of filteredProducts; track item.productId) {
-      <div class="p-4 border rounded shadow-sm">
-        <img [src]="item.imagePath" [alt]="item.productName" class="w-full h-auto mb-2" />
-        <h3 class="font-bold">{{ item.productName }}</h3>
-        <p>ราคา: {{ item.price }} บาท</p>
-      </div>
-    }
-
-    @if (filteredProducts.length === 0) {
-      <div class="col-span-full text-center text-gray-500 py-8">
-        ไม่พบสินค้าที่ตรงกับเงื่อนไขการค้นหา
-      </div>
-    }
-  </div> -->
   <custom-data-grid
-  [dataSource]="filteredProducts"
-  keyExpr="productId"
-  [columns]="columns"
-  [actionButtons]="actionButtons"
-  actionColumnCaption="จัดการ"
-  [actionColumnWidth]="200"
-  [hasDetailRow]="true"
-  [masterDetailTemplate]="productDetailTemplate"
-  [showSearchPanel]="true"
-  [pageSize]="10"
-  (rowClick)="onRowClick($event)">
+    [dataSource]="filteredProducts"
+    keyExpr="productId"
+    [columns]="columns"
+    [actionButtons]="actionButtons"
+    actionColumnCaption="จัดการ"
+    [actionColumnWidth]="200"
+    [hasDetailRow]="true"
+    [masterDetailTemplate]="productDetailTemplate"
+    [showSearchPanel]="false"
+    [pageSize]="10"
+    (rowClick)="onRowClick($event)"
+  >
+    <!-- Template สถานะ -->
+    <ng-template #statusTemplate let-cell>
+      <span
+        [class]="
+          cell.data.statusProductCode === 'ACTIVE'
+            ? 'text-green-600 font-semibold'
+            : 'text-red-600 font-semibold'
+        "
+      >
+        {{ cell.data.statusProductCode }}
+      </span>
+    </ng-template>
 
-  <!-- Template สถานะ -->
-  <div *dxTemplate="let cell of 'statusTemplate'">
-    <span [class]="cell.data.statusProductCode === 'ACTIVE'
-      ? 'px-2 py-1 rounded text-xs bg-green-100 text-green-700'
-      : 'px-2 py-1 rounded text-xs bg-red-100 text-red-700'">
-      {{ cell.data.statusProductCode }}
-    </span>
-  </div>
+    <!-- Detail Row — แสดง price, detail, quantity, image -->
+    <ng-template #productDetailTemplate let-data>
+      <div class="p-4 bg-gray-50 flex flex-row gap-6">
+        <!-- รูปสินค้า -->
+        <img
+          [src]="data.imagePath"
+          [alt]="data.productName"
+          class="w-32 h-32 object-cover rounded shadow"
+        />
 
-  <!-- Detail Row — แสดง price, detail, quantity, image -->
-  <ng-template #productDetailTemplate let-data>
-    <div class="p-4 bg-gray-50 flex flex-row gap-6">
-
-      <!-- รูปสินค้า -->
-      <img
-        [src]="data.imagePath"
-        [alt]="data.productName"
-        class="w-32 h-32 object-cover rounded shadow">
-
-      <!-- ข้อมูล detail -->
-      <div class="flex flex-col gap-2">
-        <p class="font-semibold text-lg">{{ data.productName }}</p>
-        <p class="text-sm text-gray-600">{{ data.detail }}</p>
-        <div class="flex flex-row gap-6 mt-2">
-          <div>
-            <span class="text-xs text-gray-400">ราคา</span>
-            <p class="font-semibold text-blue-600">
-              {{ data.price | number:'1.2-2' }} บาท
-            </p>
-          </div>
-          <div>
-            <span class="text-xs text-gray-400">จำนวนคงเหลือ</span>
-            <p class="font-semibold"
-              [class.text-red-500]="data.quantity === 0"
-              [class.text-green-600]="data.quantity > 0">
-              {{ data.quantity }} ชิ้น
-            </p>
+        <!-- ข้อมูล detail -->
+        <div class="flex flex-col gap-2">
+          <p class="font-semibold text-lg">{{ data.productName }}</p>
+          <p class="text-sm text-gray-600">{{ data.detail }}</p>
+          <div class="flex flex-row gap-6 mt-2">
+            <div>
+              <span class="text-xs text-gray-400">ราคา</span>
+              <p class="font-semibold text-blue-600">{{ data.price | number: '1.2-2' }} บาท</p>
+            </div>
+            <div>
+              <span class="text-xs text-gray-400">จำนวนคงเหลือ</span>
+              <p
+                class="font-semibold"
+                [class.text-red-500]="data.quantity === 0"
+                [class.text-green-600]="data.quantity > 0"
+              >
+                {{ data.quantity }} ชิ้น
+              </p>
+            </div>
           </div>
         </div>
       </div>
-
-    </div>
-  </ng-template>
-
-</custom-data-grid>
+    </ng-template>
+  </custom-data-grid>
 </div>

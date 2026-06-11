@@ -80,16 +80,30 @@ export class CustomDataGridComponent {
 
   isButtonVisible(btn: ActionButton, rowData: any): boolean {
     if (!btn.visible) return true;
-
-    // เช็คว่าปุ่มนี้ควรแสดงไหมสำหรับแถวนี้
-    // ถ้าไม่ได้กำหนด visible = แสดงเสมอ
     return btn.visible(rowData);
   }
+
+  isButtonDisabled(btn: ActionButton, rowData: any): boolean {
+    if (typeof btn.disabled === 'function') {
+      return btn.disabled(rowData);
+    }
+    return btn.disabled ?? false;
+  }
+
   onRowClick(e: any): void {
     this.rowClick.emit(e.data);
   }
 
   onSelectionChanged(e: any): void {
     this.selectionChanged.emit(e.selectedRowsData);
+  }
+
+  isTemplateRef(value: any): boolean {
+    return value instanceof TemplateRef;
+  }
+
+  getTemplateRef(dataField: string): TemplateRef<any> | null {
+    const col = this.columns.find(c => c.dataField === dataField);
+    return (col && col.cellTemplate instanceof TemplateRef) ? col.cellTemplate : null;
   }
 }

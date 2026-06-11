@@ -7,6 +7,8 @@ export interface valueOption {
 // Interface กำหนดรูปร่างของแต่ละ column
 // หน้าบ้านส่ง array ของ ColumnConfig เข้ามา
 // --------------------------------------------------
+import { TemplateRef } from '@angular/core';
+
 export interface ColumnConfig {
   dataField: string;
   // ชื่อ field ในข้อมูล เช่น 'productName', 'status'
@@ -38,9 +40,8 @@ export interface ColumnConfig {
   // ตัวเลข → '#,##0.00'
   // วันที่  → 'dd/MM/yyyy'
 
-  cellTemplate?: string;
-  // ชื่อ template พิเศษที่ต้องการ render เอง
-  // หน้าบ้านสร้าง *dxTemplate ชื่อเดียวกันนี้
+  cellTemplate?: string | TemplateRef<any> | any;
+  // ชื่อ template พิเศษที่ต้องการ render เอง หรือ TemplateRef
 }
 
 // --------------------------------------------------
@@ -70,8 +71,8 @@ export interface ActionButton {
   width?: string | number;
   // ความกว้างปุ่ม — ตรงกับ @Input() width
 
-  disabled?: boolean;
-  // ปิดการใช้งานปุ่ม — ตรงกับ @Input() disabled
+  disabled?: boolean | ((rowData: any) => boolean);
+  // ปิดการใช้งานปุ่ม สามารถเป็น boolean ปกติ หรือเป็น function คืนค่า boolean ก็ได้
 
   onClick: (rowData: any) => void;
   // function ที่จะเรียกเมื่อกดปุ่ม
@@ -80,4 +81,32 @@ export interface ActionButton {
   visible?: (rowData: any) => boolean;
   // function บอกว่าปุ่มนี้แสดงไหมสำหรับแถวนี้
   // ถ้าไม่กำหนด = แสดงทุกแถว
+}
+
+export interface PopupButton {
+  text: string;
+  // ข้อความบนปุ่ม เช่น 'บันทึก', 'ยกเลิก', 'ยืนยัน'
+
+  type?: 'normal' | 'default' | 'success' | 'danger';
+  // สีปุ่ม
+  // normal  = เทา
+  // default = น้ำเงิน
+  // success = เขียว
+  // danger  = แดง
+
+  stylingMode?: 'text' | 'outlined' | 'contained';
+  // รูปแบบปุ่ม
+  // contained = ทึบ (default)
+  // outlined  = มีขอบ
+  // text      = แบบข้อความ
+
+  icon?: string;
+  // icon DevExtreme เช่น 'save', 'close', 'trash'
+
+  disabled?: boolean;
+  // true = ปิดปุ่ม กดไม่ได้
+
+  onClick: () => void;
+  // function ที่เรียกเมื่อกดปุ่ม
+  // ไม่ส่ง rowData เพราะ popup จัดการ state เอง
 }

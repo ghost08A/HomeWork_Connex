@@ -39,7 +39,7 @@
       [fixedPosition]="col.fixedPosition ?? 'left'"
       [visible]="col.visible ?? true"
       [format]="col.format ?? undefined"
-      [cellTemplate]="col.cellTemplate ?? undefined">
+      [cellTemplate]="isTemplateRef(col.cellTemplate) ? 'customColumnTemplate' : (col.cellTemplate ?? undefined)">
     </dxi-column>
   }
 
@@ -64,7 +64,7 @@
     วน loop actionButtons และเช็ค visible ก่อนแสดง
   -->
   <div *dxTemplate="let cell of 'actionCellTemplate'">
-    <div class="flex flex-row gap-1 justify-center">
+    <div class="flex flex-row gap-1 justify-around">
       @for (btn of actionButtons; track $index) {
         @if (isButtonVisible(btn, cell.data)) {
 
@@ -73,16 +73,17 @@
             ส่ง property ตรงๆ จาก ActionButton interface
             (onClick) รับ event แล้วเรียก btn.onClick พร้อมส่ง rowData
           -->
+            <div>
           <app-custom-button
             [text]="btn.text ?? ''"
             [icon]="btn.icon ?? ''"
             [type]="btn.type ?? 'default'"
             [stylingMode]="btn.stylingMode ?? 'contained'"
             [width]="btn.width ?? 'auto'"
-            [disabled]="btn.disabled ?? false"
+            [disabled]="isButtonDisabled(btn, cell.data)"
             (onClick)="btn.onClick(cell.data)">
           </app-custom-button>
-
+          </div>
         }
       }
     </div>
@@ -110,5 +111,14 @@
       </ng-container>
     </div>
   }
+
+  <!-- 
+    Template พิเศษสำหรับ column ที่ส่ง ng-template เข้ามาผ่าน TemplateRef
+  -->
+  <div *dxTemplate="let cell of 'customColumnTemplate'">
+    <ng-container
+      *ngTemplateOutlet="getTemplateRef(cell.column.dataField); context: { $implicit: cell }">
+    </ng-container>
+  </div>
 
 </dx-data-grid>
