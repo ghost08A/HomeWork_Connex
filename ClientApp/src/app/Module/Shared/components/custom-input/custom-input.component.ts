@@ -21,7 +21,7 @@ export class DateUtilService {
 
 export type InputType = 'Text' | 'Number' | 'TextArea' | 'Password' | 'Date' | 'DateTime' | 'Phone' | 'Email' | 'DropDown' | 'Checkbox' | 'Search' | string;
 @Component({
-  selector: 'app-custom-input',
+  selector: 'custom-input',
   standalone: true,
   imports: [
     DxTextBoxModule,

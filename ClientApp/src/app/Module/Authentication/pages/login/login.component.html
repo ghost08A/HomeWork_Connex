@@ -3,7 +3,7 @@
     <h2 class="login-title">Arm Store App</h2>
 
       
-      <app-custom-input
+      <custom-input
         type="Text"
         label="Username"
         attributeName="Username"
@@ -13,9 +13,9 @@
         [fieldValue]="formData.username"
         (fieldValueChange)="onFieldValueChange('username', $event)"
         class="mb-4 block">
-      </app-custom-input>
+      </custom-input>
 
-      <app-custom-input
+      <custom-input
         type="Password"
         label="Password"
         attributeName="Password"
@@ -25,7 +25,7 @@
         [fieldValue]="formData.password"
         (fieldValueChange)="onFieldValueChange('password', $event)"
         class="mb-6 block">
-      </app-custom-input>
+      </custom-input>
 
       <div class="flex flex-col gap-3 mt-6">
         <custom-button

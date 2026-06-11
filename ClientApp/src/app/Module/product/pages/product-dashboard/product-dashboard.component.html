@@ -6,39 +6,41 @@
   </div>
 
   <!-- Search & Filter Card -->
-  <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+  <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Left Column: Search & Checkboxes -->
       <div class="flex flex-col gap-4">
-        <app-custom-input
+        <custom-input
           type="Text"
           label="ค้นหาสินค้า"
           placeholder="พิมพ์ชื่อสินค้าที่ต้องการค้นหา..."
           [(fieldValue)]="searchKeyword"
-          (fieldValueChange)="applyFilters()"
         >
-        </app-custom-input>
+        </custom-input>
         <div class="flex flex-row gap-6 mt-2">
+          <!-- 
+            เปิดใช้ (fieldValueChange)="applyFilters()" ด้านล่าง หากต้องการค้นหาทันที (Real-time Search)
+          -->
           <custom-checkbox
             label="Active"
             [(fieldValue)]="filterActive"
-            (fieldValueChange)="applyFilters()"
           />
           <custom-checkbox
             label="Inactive"
             [(fieldValue)]="filterInactive"
-            (fieldValueChange)="applyFilters()"
           />
         </div>
       </div>
 
       <!-- Right Column: Tag Box & Buttons -->
       <div class="flex flex-col justify-between gap-4">
+        <!-- 
+          เปิดใช้ (fieldValueChange)="applyFilters()" ด้านล่าง หากต้องการค้นหาทันที (Real-time Search)
+        -->
         <custom-tag-box
           label="ประเภทสินค้า"
           [dataSource]="categoryOptions"
           [(fieldValue)]="selectedCategories"
-          (fieldValueChange)="applyFilters()"
           [showSelectionControls]="true"
           [applyValueMode]="'useButtons'"
           [searchEnabled]="true"
@@ -52,7 +54,7 @@
             icon="plus"
             type="success"
             stylingMode="contained"
-            (onClick)="onAddProduct()"
+            (onClick)="onAddNewProduct()"
           >
           </custom-button>
 
@@ -81,7 +83,10 @@
     [pageSize]="10"
     (rowClick)="onRowClick($event)"
   >
-    <!-- Template สถานะ -->
+  </custom-data-grid>
+</div>
+
+<!-- Template สถานะ -->
     <ng-template #statusTemplate let-cell>
       <span
         [class]="
@@ -94,38 +99,167 @@
       </span>
     </ng-template>
 
-    <!-- Detail Row — แสดง price, detail, quantity, image -->
-    <ng-template #productDetailTemplate let-data>
-      <div class="p-4 bg-gray-50 flex flex-row gap-6">
-        <!-- รูปสินค้า -->
-        <img
-          [src]="data.imagePath"
-          [alt]="data.productName"
-          class="w-32 h-32 object-cover rounded shadow"
-        />
+    <!-- Detail Row — แสดง price, detail, quantity, image, createdDate, updatedDate -->
+  <ng-template #productDetailTemplate let-data>
+    <div class="p-4 bg-gray-50 flex flex-row gap-6">
 
-        <!-- ข้อมูล detail -->
-        <div class="flex flex-col gap-2">
-          <p class="font-semibold text-lg">{{ data.productName }}</p>
-          <p class="text-sm text-gray-600">{{ data.detail }}</p>
-          <div class="flex flex-row gap-6 mt-2">
-            <div>
-              <span class="text-xs text-gray-400">ราคา</span>
-              <p class="font-semibold text-blue-600">{{ data.price | number: '1.2-2' }} บาท</p>
-            </div>
-            <div>
-              <span class="text-xs text-gray-400">จำนวนคงเหลือ</span>
-              <p
-                class="font-semibold"
-                [class.text-red-500]="data.quantity === 0"
-                [class.text-green-600]="data.quantity > 0"
-              >
-                {{ data.quantity }} ชิ้น
-              </p>
-            </div>
+      <!-- รูปสินค้า -->
+      <img
+        [src]="data.imagePath"
+        [alt]="data.productName"
+        class="w-32 h-32 object-cover rounded shadow">
+
+      <!-- ข้อมูล detail -->
+      <div class="flex flex-col gap-2 flex-grow">
+        <p class="font-semibold text-lg">{{ data.productName }}</p>
+        <p class="text-sm text-gray-600">{{ data.detail }}</p>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-2">
+          <div>
+            <span class="text-xs text-gray-400 block mb-1">ราคา</span>
+            <p class="font-semibold text-blue-600">
+              {{ data.price | number:'1.2-2' }} บาท
+            </p>
+          </div>
+          <div>
+            <span class="text-xs text-gray-400 block mb-1">จำนวนคงเหลือ</span>
+            <p class="font-semibold"
+              [class.text-red-500]="data.quantity === 0"
+              [class.text-green-600]="data.quantity > 0">
+              {{ data.quantity }} ชิ้น
+            </p>
+          </div>
+          <div>
+            <span class="text-xs text-gray-400 block mb-1">วันที่เพิ่มเข้าระบบ</span>
+            <p class="text-sm text-gray-700">
+              {{ data.createdDate | date:'dd/MMM/yyyy HH:mm' }}
+            </p>
+          </div>
+          <div>
+            <span class="text-xs text-gray-400 block mb-1">แก้ไขล่าสุด</span>
+            <p class="text-sm text-gray-700">
+              {{ data.updatedDate | date:'dd/MMM/yyyy HH:mm' }}
+            </p>
           </div>
         </div>
       </div>
-    </ng-template>
-  </custom-data-grid>
-</div>
+
+    </div>
+  </ng-template>
+
+<!-- ===== Popup จัดการข้อมูล (เพิ่ม/แก้ไข) ===== -->
+<custom-popup
+  [(visible)]="isPopupVisible"
+  [title]="popupMode === 'ADD' ? 'เพิ่มสินค้าใหม่' : 'แก้ไขสินค้า'"
+  [width]="600"
+  [buttons]="popupButtons"
+  [contentTemplate]="productFormContent"
+  [closeOnOutsideClick]="false"
+  (onHidden)="onProductPopupHidden()"/>
+
+<!--
+  ng-template ของ form สินค้า (ใช้ร่วมกันทั้งเพิ่มและแก้ไข)
+  ผูก [(fieldValue)] กับ productForm
+-->
+<ng-template #productFormContent>
+  <div class="flex flex-col gap-4">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      @if(popupMode === 'EDIT'){
+      <custom-input
+        type="Text"
+        label="รหัสสินค้า"
+        [isDisabled]="true" 
+        [(fieldValue)]="productForm.productId">
+      </custom-input>
+
+      <custom-select-box
+        label="สถานะ"
+        [dataSource]="statusOptions"
+        [isRequired]="true"
+        [(fieldValue)]="productForm.statusProductCode"
+        placeholder="เลือกสถานะสินค้า">
+      </custom-select-box>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <custom-input
+        type="Text"
+        label="ชื่อสินค้า"
+        placeholder="กรอกชื่อสินค้า"
+        [isRequired]="true"
+        [(fieldValue)]="productForm.productName">
+      </custom-input>
+
+      <custom-tag-box
+        label="ประเภทสินค้า"
+        [dataSource]="categoryOptions"
+        [(fieldValue)]="productForm.categoryId"
+        [isRequired]="true"
+        [showSelectionControls]="true"
+        [applyValueMode]="'useButtons'"
+        [searchEnabled]="true"
+        placeholder="เลือกประเภทสินค้า">
+      </custom-tag-box>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <custom-input
+        type="Number"
+        label="ราคา"
+        placeholder="กรอกราคา"
+        [isRequired]="true"
+        [(fieldValue)]="productForm.price">
+      </custom-input>
+
+      <custom-input
+        type="Number"
+        label="จำนวนคงเหลือ"
+        placeholder="กรอกจำนวน"
+        [isRequired]="true"
+        [(fieldValue)]="productForm.quantity">
+      </custom-input>
+    </div>
+
+    <custom-input
+      type="Text"
+      label="ลิงก์รูปภาพ (Image URL)"
+      placeholder="วางลิงก์รูปภาพที่นี่ (https://...)"
+      [(fieldValue)]="productForm.imagePath">
+    </custom-input>
+
+    <custom-input
+      type="TextArea"
+      label="รายละเอียด"
+      placeholder="กรอกรายละเอียด"
+      [(fieldValue)]="productForm.detail">
+    </custom-input>
+
+  </div>
+</ng-template>
+
+<!-- ===== Popup ยืนยันลบ ===== -->
+<custom-popup
+  [(visible)]="showDeletePopup"
+  title="ยืนยันการลบ"
+  [width]="400"
+  [buttons]="deleteButtons"
+  [contentTemplate]="deleteContent"
+  [closeOnOutsideClick]="true"
+  (onHidden)="onDeletePopupHidden()"/>
+
+<!--
+  ng-template ของ popup ยืนยันลบ
+  แสดงชื่อสินค้าที่กำลังจะลบ
+  productToDelete มาจาก onDelete(rowData)
+-->
+<ng-template #deleteContent>
+  <div class="text-center py-4 flex flex-col gap-2">
+    <p class="text-lg">คุณต้องการลบสินค้านี้ใช่หรือไม่?</p>
+    <p class="font-semibold text-red-500">
+      {{ productToDelete?.productName }}
+    </p>
+    <p class="text-gray-400 text-sm">การลบไม่สามารถเรียกคืนได้</p>
+  </div>
+</ng-template>
