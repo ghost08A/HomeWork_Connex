@@ -1,8 +1,8 @@
-<div class="min-h-screen px-8 py-6 bg-gray-50">
+<div class="product-dashboard">
   <!-- Header Section -->
-  <div class="mb-6">
-    <h1 class="text-3xl font-bold text-gray-800 tracking-tight">Product Dashboard</h1>
-    <hr class="mt-4 border-gray-300" />
+  <div class="dashboard-header ">
+    <h1 class="header-title">Product Dashboard</h1>
+    <hr class="header-divider" />
   </div>
 
   <!-- Search & Filter Card -->
@@ -132,13 +132,13 @@
           <div>
             <span class="text-xs text-gray-400 block mb-1">วันที่เพิ่มเข้าระบบ</span>
             <p class="text-sm text-gray-700">
-              {{ data.createdDate | date:'dd/MMM/yyyy HH:mm' }}
+              {{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}
             </p>
           </div>
           <div>
             <span class="text-xs text-gray-400 block mb-1">แก้ไขล่าสุด</span>
             <p class="text-sm text-gray-700">
-              {{ data.updatedDate | date:'dd/MMM/yyyy HH:mm' }}
+              {{ data.updatedAt | date:'dd/MM/yyyy HH:mm' }}
             </p>
           </div>
         </div>

@@ -116,7 +116,7 @@ export class CustomSelectBoxComponent implements OnChanges {
     // valueOption → คืน .value (ข้อความที่แสดง)
   };
 
-  valueExpr = (item: valueOption | string): string => {
+  valueExpr = (item: valueOption | string): string | number => {
     if (!item) return '';
     return typeof item === 'string' ? item : item.key;
     // string ธรรมดา → คืน string นั้นเลย

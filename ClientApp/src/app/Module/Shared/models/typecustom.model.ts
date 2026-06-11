@@ -1,13 +1,15 @@
-export interface valueOption {
-  key: string;    // ค่าที่ใช้จริงในระบบ เช่น '1', 'TH'
-  value: string;  // ข้อความที่แสดงให้ user เห็น เช่น 'IT', 'Thailand'
-}
-
 // --------------------------------------------------
 // Interface กำหนดรูปร่างของแต่ละ column
 // หน้าบ้านส่ง array ของ ColumnConfig เข้ามา
 // --------------------------------------------------
 import { TemplateRef } from '@angular/core';
+
+
+export interface valueOption {
+  key: string | number;    // ค่าที่ใช้จริงในระบบ เช่น '1', 'TH'
+  value: string;  // ข้อความที่แสดงให้ user เห็น เช่น 'IT', 'Thailand'
+}
+
 
 export interface ColumnConfig {
   dataField: string;

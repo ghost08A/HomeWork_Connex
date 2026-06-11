@@ -130,7 +130,7 @@ export class CustomTagBoxComponent {
     // valueOption  → คืน .value             เช่น 'IT'
   };
 
-  valueExpr = (item: valueOption | string): string => {
+  valueExpr = (item: valueOption | string): string | number => {
     // บอก dx-tag-box ว่าเวลาเลือกแล้วเก็บค่าอะไร
     if (!item) return '';
     return typeof item === 'string' ? item : item.key;
