@@ -2,7 +2,7 @@ import { Component, Input, Output,EventEmitter } from '@angular/core';
 import { DxButtonModule } from 'devextreme-angular';
 
 @Component({
-  selector: 'app-custom-button',
+  selector: 'custom-button',
   imports: [DxButtonModule],
   templateUrl: './custom-button.component.html',
   styleUrl: './custom-button.component.scss',

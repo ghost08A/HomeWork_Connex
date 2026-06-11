@@ -1,1 +1,42 @@
-<p>custom-popup works!</p>
+<dx-popup 
+    [visible]="visible"
+  [title]="title"
+  [width]="width"
+  [height]="height"
+  [showCloseButton]="showCloseButton"
+  [hideOnOutsideClick]="closeOnOutsideClick"
+  [dragEnabled]="true"
+  [showTitle]="true"
+  contentTemplate="popupContent"
+  (onHidden)="onPopupHidden()"
+>
+    <div *dxTemplate="let data of 'popupContent'">
+        <div class="flex flex-col gap-4 ">
+            <div class="popup-body">
+
+           @if(contentTemplate){
+                <ng-container *ngTemplateOutlet="contentTemplate"/>
+            }
+             </div>
+              <!--
+        ปุ่มด้านล่าง — วน loop จาก buttons array
+        เรียงจากซ้ายไปขวาตามลำดับ
+        ถ้าไม่มีปุ่มเลย = ไม่แสดง footer
+      -->
+      @if (buttons.length > 0) {
+        <div class="flex flex-row justify-end gap-2 pt-2 border-t border-gray-200">
+          @for (btn of buttons; track $index) {
+            <custom-button
+              [text]="btn.text"
+              [type]="btn.type ?? 'default'"
+              [stylingMode]="btn.stylingMode ?? 'contained'"
+              [icon]="btn.icon ?? ''"
+              [disabled]="btn.disabled ?? false"
+              (onClick)="btn.onClick()">
+            </custom-button>
+          }
+        </div>
+      }
+        </div>
+    </div>
+</dx-popup>

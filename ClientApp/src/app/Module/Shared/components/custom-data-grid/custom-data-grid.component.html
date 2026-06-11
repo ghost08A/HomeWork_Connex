@@ -60,7 +60,7 @@
 
   <!--
     Template column จัดการ
-    ใช้ app-custom-button แทน dx-button โดยตรง
+    ใช้ custom-button แทน dx-button โดยตรง
     วน loop actionButtons และเช็ค visible ก่อนแสดง
   -->
   <div *dxTemplate="let cell of 'actionCellTemplate'">
@@ -69,12 +69,12 @@
         @if (isButtonVisible(btn, cell.data)) {
 
           <!--
-            ใช้ app-custom-button ที่มีอยู่แล้ว
+            ใช้ custom-button ที่มีอยู่แล้ว
             ส่ง property ตรงๆ จาก ActionButton interface
             (onClick) รับ event แล้วเรียก btn.onClick พร้อมส่ง rowData
           -->
             <div>
-          <app-custom-button
+          <custom-button
             [text]="btn.text ?? ''"
             [icon]="btn.icon ?? ''"
             [type]="btn.type ?? 'default'"
@@ -82,7 +82,7 @@
             [width]="btn.width ?? 'auto'"
             [disabled]="isButtonDisabled(btn, cell.data)"
             (onClick)="btn.onClick(cell.data)">
-          </app-custom-button>
+          </custom-button>
           </div>
         }
       }

@@ -138,7 +138,7 @@ export class ProductDashboardComponent implements OnInit {
     "productName": "สว่านไฟฟ้าไร้สาย 12V",
     "price": 1290.00,
     "detail": "สว่านไฟฟ้าพร้อมแบตเตอรี่ 2 ก้อน สำหรับงานซ่อมบำรุงทั่วไปในสำนักงาน",
-    "quantity": 3,
+    "quantity": 2,
     "imagePath": "https://placehold.co/400x400/f59e0b/ffffff?text=Cordless+Drill",
     "statusProductCode": "INACTIVE",
     "categoryId": ["10"]

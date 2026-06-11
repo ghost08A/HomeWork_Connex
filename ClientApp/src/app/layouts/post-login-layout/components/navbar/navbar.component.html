@@ -6,12 +6,12 @@
   <div class="navbar-actions">
 
     <div class="mobile-menu-toggle">
-      <app-custom-button
+      <custom-button
         icon="menu"
         text=""
         stylingMode="text"
         (onClick)="toggleMobileMenu()">
-      </app-custom-button>
+      </custom-button>
     </div>
 
     <div class="desktop-menu">
@@ -32,13 +32,13 @@
         
 
         <div class="desktop-logout">
-          <app-custom-button
+          <custom-button
             text="ออกจากระบบ"
             type="danger"
             stylingMode="contained"
             [width]="110"
             (onClick)="onLogout()">
-          </app-custom-button>
+          </custom-button>
         </div>
 
       </div>
@@ -62,13 +62,13 @@
   }
 
     <div class="mobile-logout-wrapper">
-      <app-custom-button
+      <custom-button
         text="ออกจากระบบ"
         type="danger"
         stylingMode="contained"
         width="100%"
         (onClick)="onLogout()">
-      </app-custom-button>
+      </custom-button>
     </div>
   </div>
 }

@@ -85,26 +85,10 @@ export interface ActionButton {
 
 export interface PopupButton {
   text: string;
-  // ข้อความบนปุ่ม เช่น 'บันทึก', 'ยกเลิก', 'ยืนยัน'
-
   type?: 'normal' | 'default' | 'success' | 'danger';
-  // สีปุ่ม
-  // normal  = เทา
-  // default = น้ำเงิน
-  // success = เขียว
-  // danger  = แดง
-
   stylingMode?: 'text' | 'outlined' | 'contained';
-  // รูปแบบปุ่ม
-  // contained = ทึบ (default)
-  // outlined  = มีขอบ
-  // text      = แบบข้อความ
-
   icon?: string;
-  // icon DevExtreme เช่น 'save', 'close', 'trash'
-
   disabled?: boolean;
-  // true = ปิดปุ่ม กดไม่ได้
 
   onClick: () => void;
   // function ที่เรียกเมื่อกดปุ่ม
