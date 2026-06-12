@@ -60,6 +60,9 @@ export class CustomSelectBoxComponent implements OnChanges {
   // top    = label อยู่เหนือ input (default)
   // bottom = label อยู่ใต้ input
 
+  @Input() showClearButton: boolean = true;
+  // แสดงปุ่มกากบาทสำหรับล้างค่ามั้ย
+
   @Input() attributeName: string = '';
   // ชื่อ field สำหรับดึง error message จาก componentState
 

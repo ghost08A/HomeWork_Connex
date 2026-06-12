@@ -1,4 +1,4 @@
-﻿using HomeWork.Domain.Interfaces.Services.ProductService;
+using HomeWork.Domain.Interfaces.Services.ProductService;
 using HomeWork.Domain.RequestModels.ProductRequestModel;
 using HomeWork.Domain.Share.Errors;
 using Microsoft.AspNetCore.Authorization;
@@ -47,6 +47,14 @@ namespace Web.HomeWork.Controllers.ProductController
         {
             CustomError error = new CustomError();
             await _productService.CreateProductAsync(request, error);
+            return Ok();
+        }
+
+        [HttpPut("UpdateProduct")]
+        public async Task<IActionResult> UpdateProduct(UpdateProductRequestModel request)
+        {
+            CustomError error = new CustomError();
+            await _productService.UpdateProductAsync(request, error);
             return Ok();
         }
 

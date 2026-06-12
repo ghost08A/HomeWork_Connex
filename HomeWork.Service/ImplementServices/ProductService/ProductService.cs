@@ -8,13 +8,9 @@ using HomeWork.Domain.ResponseModels.PageResultResponseModel;
 using HomeWork.Domain.ResponseModels.ProductResponseModel;
 using HomeWork.Domain.ResponseModels.ValueOptionResponseModel;
 using HomeWork.Domain.Share.Errors;
-using Microsoft.AspNetCore.Http.HttpResults;
+using HomeWork.Service.Helper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Npgsql;
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 
 namespace HomeWork.Service.ImplementServices.ProductService
 {
@@ -133,6 +129,109 @@ namespace HomeWork.Service.ImplementServices.ProductService
             }
         }
 
+        public async Task<string> UpdateProductAsync(UpdateProductRequestModel request, CustomError error)
+        {
+            var user = _tokenService.GetCurrentUser();
+            DateTime timenow = DateTime.UtcNow;
+            var product = await _context.Products
+                .Include(p => p.ProductCategories)
+                .FirstOrDefaultAsync(p => p.ProductId == request.ProductId);
+
+            ValidateProduct(request, error);
+            if (product==null) error.AddError("ไม่พบข้อมูลสินค้า");
+
+            if (request.UpdatedAt.HasValue && request.UpdatedAt <product.UpdatedAt  
+                error.AddError("เวอร์ชั่นไม่ตรงกันกรุณาลองใหม่อีกครั้ง");
+
+
+            
+
+            await ValidateDatabaseMasterDataAsync(request.CategoryId, request.StatusProductCode, error);
+            error.ThrowIfError();
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                product.ProductName = request.ProductName;
+                product.Price = request.Price;
+                product.Detail = request.Detail;
+                product.Quantity = request.Quantity;
+                product.ImagePath = request.ImagePath;
+                product.StatusProductCode = request.StatusProductCode;
+
+                product.UpdatedAt = timenow;
+                product.UpdatedBy = user.UserId;
+
+                _context.ProductCategories.RemoveRange(product.ProductCategories);
+                product.ProductCategories = request.CategoryId.Select(id => new ProductCategory {
+                    ProductId = product.ProductId,
+                    CategoryId = id,
+                }).ToList();
+
+                var logUpdateProduct = new LogProduct
+                {
+                    ProductId = product.ProductId,
+                    Action = "UPDATE",
+                    ProductName = product.ProductName,
+                    Price = product.Price,
+                    Detail = product.Detail,
+                    Quantity = product.Quantity,
+                    ImagePath = product.ImagePath,
+                    StatusProductCode = product.StatusProductCode,
+                    CreatedAt = product.CreatedAt, // เก็บเวลาสร้างเดิม
+                    CreatedBy = product.CreatedBy,
+                    UpdatedAt = timenow, // เวลาที่อัปเดต
+                    UpdatedBy = user.UserId
+                };
+
+                _context.LogProducts.Add(logUpdateProduct);
+
+                // 4.4 เซฟลง Database
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return "success";
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                error.AddError("เกิดข้อผิดพลาด");
+                error.ThrowIfError();
+                throw;
+            }
+
+        }
+
+        private async Task ValidateDatabaseMasterDataAsync(List<int> categoryIds, string statusProductCode, CustomError error)
+        {
+            // 1. เช็คสถานะสินค้า (Status)
+            // AnyAsync จะคืนค่า true ถ้าเจอข้อมูลอย่างน้อย 1 ตัว
+            bool isStatusExist = await _context.StatusProducts
+                .AnyAsync(s => s.StatusProductCode == statusProductCode);
+
+            if (!isStatusExist)
+            {
+                error.AddError("statusProductCode", "ระบุสถานะสินค้าไม่ถูกต้อง หรือสถานะนี้ไม่มีอยู่ในระบบ");
+            }
+
+            // 2. เช็คหมวดหมู่ (Category)
+            if (categoryIds != null && categoryIds.Any())
+            {
+                // ทริค: กำจัดเลขซ้ำเผื่อหน้าบ้านส่ง [1, 1, 2] มา
+                var uniqueCategoryIds = categoryIds.Distinct().ToList();
+
+                // 🌟 ท่าไม้ตาย: นับจำนวนหมวดหมู่ใน DB ที่ตรงกับรหัสที่ส่งมา
+                int existingCategoryCount = await _context.Categories
+                    .CountAsync(c => uniqueCategoryIds.Contains(c.CategoryId));
+
+                // ถ้าจำนวนที่เจอใน DB ไม่เท่ากับจำนวนที่หน้าบ้านส่งมา แปลว่ามีคนแอบส่งรหัสมั่วมาด้วย!
+                if (existingCategoryCount != uniqueCategoryIds.Count)
+                {
+                    error.AddError("categoryId", "ระบุหมวดหมู่สินค้าไม่ถูกต้อง หรือหมวดหมู่ถูกลบออกจากระบบไปแล้ว");
+                }
+            }
+        }
         private static void ValidateProduct(CreateProductRequestModel request, CustomError error)
         {
             if (string.IsNullOrWhiteSpace(request.ProductName))
@@ -140,22 +239,38 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 error.AddError("productName", "กรุณาระบุชื่อสินค้า");
             }
             if (request.ProductName.Length > 255)
-                error.AddError("ชื่อสินค้ายาวเกินไป (สูงสุด 255 ตัวอักษร)");
-
+                error.AddError("productName", "ชื่อสินค้ายาวเกินไป (สูงสุด 255 ตัวอักษร)");
+            if (CommonHelper.ContainsEmoji(request.ProductName))
+                error.AddError("productName", "ห้ามใส่Emoji");
             // ดักราคา
-            if (request.Price < 0)
+            if (request.Price <= 0)
                 error.AddError("ราคาสินค้าต้องไม่ติดลบ");
 
             // ดักจำนวน
-            if (request.Quantity < 0)
-                error.AddError("จำนวนสินค้าต้องไม่ติดลบ");
+            if (request.Quantity <= 0)
+                error.AddError("quantity","จำนวนสินค้าต้องไม่ติดลบ");
 
-            // ดักหมวดหมู่ (ต้องมีข้อมูลและห้ามมีรหัสติดลบ)
             if (request.CategoryId == null || !request.CategoryId.Any())
-                error.AddError("กรุณาเลือกอย่างน้อย 1 หมวดหมู่");
+                error.AddError("categoryId", "กรุณาเลือกอย่างน้อย 1 หมวดหมู่");
 
             if (request.CategoryId.Any(id => id <= 0))
-                error.AddError("หมวดหมู่ไม่ถูกต้อง");
+                error.AddError("categoryId", "หมวดหมู่ไม่ถูกต้อง");
+
+            if (string.IsNullOrWhiteSpace(request.ImagePath))
+            {
+                error.AddError("imagePath", "กรุณาระบุURL");
+            }
+            if (request.ImagePath.Length > 500)
+                error.AddError("imagePath", "URLยาวเกินไป (สูงสุด 255 ตัวอักษร)");
+            if (CommonHelper.ContainsEmoji(request.ImagePath))
+                error.AddError("imagePath", "ห้ามใส่Emoji");
+
+            if (string.IsNullOrWhiteSpace(request.Detail))
+                error.AddError("detail", "กรุณาใส่รายละเอียดสินค้า");
+            if (request.Detail.Length > 255)
+                error.AddError("detail", "รายละเอียดสินค้ายาวเกินไป (สูงสุด 255 ตัวอักษร)");
+            if (CommonHelper.ContainsEmoji(request.Detail))
+                error.AddError("detail", "ห้ามใส่Emoji");
         }
     }
 }

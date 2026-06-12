@@ -70,13 +70,8 @@
       </div>
     </div>
   </div>
-  <!-- Table Section / Loading State -->
-  @if(isLoading()) {
-    <div class="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-md border border-gray-200">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-      <p class="text-gray-500 font-medium text-lg">กำลังโหลดข้อมูลสินค้า...</p>
-    </div>
-  } @else {
+  <!-- Table Section -->
+  @if(!loadingService.isLoading()) {
     <custom-data-grid
       [dataSource]="filteredProducts"
       keyExpr="productId"
@@ -110,8 +105,8 @@
     <!-- Template ประเภทสินค้า -->
     <ng-template #categoryNamesTemplate let-cell>
       <div class="flex flex-wrap gap-2">
-        @if (cell.data.categoryNames?.length > 0) {
-          @for (categoryName of cell.data.categoryNames; track categoryName) {
+        @if ((cell.data?.categoryNames ?? []).length > 0) {
+          @for (categoryName of cell.data?.categoryNames ?? []; track $index) {
             <span class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
               {{ categoryName }}
             </span>
@@ -155,13 +150,13 @@
           <div>
             <span class="text-xs text-gray-400 block mb-1">วันที่เพิ่มเข้าระบบ</span>
             <p class="text-sm text-gray-700">
-              {{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}
+              {{ data.createdAt | date:'dd/MMM/yyyy HH:mm' }}
             </p>
           </div>
           <div>
             <span class="text-xs text-gray-400 block mb-1">แก้ไขล่าสุด</span>
             <p class="text-sm text-gray-700">
-              {{ data.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+              {{ data.updatedAt | date:'dd/MMM/yyyy HH:mm' }}
             </p>
           </div>
         </div>
@@ -198,8 +193,10 @@
 
       <custom-select-box
         label="สถานะ"
+        [componentState]="productState"
         attributeName="statusProductCode"
         [dataSource]="statusOptions"
+        [showClearButton]="false"
         [isRequired]="true"
         [(fieldValue)]="productForm.statusProductCode"
         placeholder="เลือกสถานะสินค้า">
@@ -212,6 +209,7 @@
         type="Text"
         label="ชื่อสินค้า"
         placeholder="กรอกชื่อสินค้า"
+        [componentState]="productState"
         attributeName="productName"
         [isRequired]="true"
         [(fieldValue)]="productForm.productName">
@@ -219,6 +217,7 @@
 
       <custom-tag-box
         label="ประเภทสินค้า"
+        [componentState]="productState"
         attributeName="categoryId"
         [dataSource]="categoryOptions"
         [(fieldValue)]="productForm.categoryId"
@@ -234,6 +233,7 @@
       <custom-input
         type="Number"
         label="ราคา"
+        [componentState]="productState"
         attributeName="price"
         placeholder="กรอกราคา"
         [isRequired]="true"
@@ -243,6 +243,7 @@
       <custom-input
         type="Number"
         label="จำนวนคงเหลือ"
+        [componentState]="productState"
         attributeName="quantity"
         placeholder="กรอกจำนวน"
         [isRequired]="true"
@@ -254,6 +255,7 @@
       type="Text"
       label="ลิงก์รูปภาพ (Image URL)"
       placeholder="วางลิงก์รูปภาพที่นี่ (https://...)"
+      [componentState]="productState"
       attributeName="imagePath"
       [isRequired]="true"
       [(fieldValue)]="productForm.imagePath">
@@ -263,6 +265,7 @@
       type="TextArea"
       label="รายละเอียด"
       placeholder="กรอกรายละเอียด"
+      [componentState]="productState"
       attributeName="detail"
       [isRequired]="true"
       [(fieldValue)]="productForm.detail">

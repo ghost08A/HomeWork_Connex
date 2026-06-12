@@ -18,5 +18,7 @@ namespace HomeWork.Domain.Interfaces.Services.ProductService
         Task<PageResultResponseModel<ProductSearchResponseModel>> SearchProductsAsync(ProductSearchRequestModel request, CustomError error);
 
         Task<string> CreateProductAsync(CreateProductRequestModel request, CustomError error);
+
+         Task<string> UpdateProductAsync(UpdateProductRequestModel request, CustomError error);
     }
 }

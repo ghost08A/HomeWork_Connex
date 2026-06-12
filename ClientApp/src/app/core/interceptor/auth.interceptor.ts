@@ -18,7 +18,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       
       // 🌐 เคส: Network Error หรือ 500 Internal Server Error
-      if (error.status === 0 || error.status === 500) {
+      if (error.status === 0 ) {
         router.navigate(['/network-error']);
         return throwError(() => error);
       }

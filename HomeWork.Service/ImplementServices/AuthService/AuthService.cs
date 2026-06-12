@@ -10,10 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using HomeWork.Service.Helper;
 
-
-using System.Text;
-using Microsoft.AspNetCore.Http.HttpResults;
-
 namespace HomeWork.Service.ImplementServices.AuthService
 {
     public class AuthService : IAuthService
@@ -31,8 +27,6 @@ namespace HomeWork.Service.ImplementServices.AuthService
         }
         public async Task<LoginResponseModel> LoginAsync(LoginRequestModel request)
         {
-            // ย้าย Logic การคิดคำนวณต่างๆ มาไว้ที่นี่ 
-            // (ในอนาคตเราจะเอา Repository มาเช็คกับ Database ตรงนี้ครับ)
 
             if (string.IsNullOrWhiteSpace(request.Username))
             {

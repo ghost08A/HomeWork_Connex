@@ -1,5 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef, signal } from '@angular/core';
-import { finalize } from 'rxjs/operators';
+import { Component, OnInit, ViewChild, TemplateRef, inject } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import {
   ActionButton,
@@ -9,7 +8,12 @@ import {
 } from '../../../Shared/models/typecustom.model';
 import { CustomTagBoxComponent } from '../../../Shared/components/custom-tag-box/custom-tag-box.component';
 import { CustomInputComponent } from '../../../Shared/components/custom-input/custom-input.component';
-import { ProductForm, ProductList, ProductSearchRequestModel, ProductSearchResponseModel } from '../../models/product.model';
+import {
+  ProductForm,
+  ProductList,
+  ProductSearchRequestModel,
+  ProductSearchResponseModel,
+} from '../../models/product.model';
 import { CustomCheckboxComponent } from '../../../Shared/components/custom-checkbox/custom-checkbox.component';
 import { CustomDataGridComponent } from '../../../Shared/components/custom-data-grid/custom-data-grid.component';
 import { DecimalPipe, DatePipe } from '@angular/common';
@@ -17,6 +21,9 @@ import { CustomButtonComponent } from '../../../Shared/components/custom-button/
 import { CustomPopupComponent } from '../../../Shared/components/custom-popup/custom-popup.component';
 import { CustomSelectBoxComponent } from '../../../Shared/components/custom-select-box/custom-select-box.component';
 import { ProductService } from '../../service/product.service';
+import { LoadingService } from '../../../Shared/services/loading.service';
+import { ErrorEditorState } from '../../../Shared/directives/validate-error.directive';
+import notify from 'devextreme/ui/notify';
 
 @Component({
   selector: 'product-dashboard',
@@ -29,13 +36,14 @@ import { ProductService } from '../../service/product.service';
     CustomDataGridComponent,
     CustomButtonComponent,
     CustomPopupComponent,
-    CustomSelectBoxComponent
+    CustomSelectBoxComponent,
   ],
   templateUrl: './product-dashboard.component.html',
   styleUrl: './product-dashboard.component.scss',
 })
 export class ProductDashboardComponent implements OnInit {
-
+  public loadingService = inject(LoadingService);
+  public productState = new ErrorEditorState();
   constructor(private productService: ProductService) {}
 
   // ======================================
@@ -51,7 +59,7 @@ export class ProductDashboardComponent implements OnInit {
   public searchKeyword: string = '';
   public filterActive: boolean = false;
   public filterInactive: boolean = false;
-  public selectedCategories: string[] = [];  // TagBox ส่ง string[]
+  public selectedCategories: string[] = []; // TagBox ส่ง string[]
 
   // ======================================
   // ข้อมูลตาราง
@@ -60,9 +68,6 @@ export class ProductDashboardComponent implements OnInit {
   public totalCount: number = 0;
   public currentPage: number = 1;
   public pageSize: number = 10;
-
-  // ใช้ signal() เฉพาะ isLoading เพื่อให้ @if รู้ค่าทันทีเมื่อ async callback เปลี่ยนค่า
-  public isLoading = signal<boolean>(true);
 
   // ======================================
   // Popup & Form
@@ -102,7 +107,7 @@ export class ProductDashboardComponent implements OnInit {
   // Lifecycle Hooks
   // ======================================
   ngOnInit(): void {
-    // ตั้งค่า Columns เลยตั้งแต่แรก เนื่องจาก ViewChild มี { static: true } 
+    // ตั้งค่า Columns เลยตั้งแต่แรก เนื่องจาก ViewChild มี { static: true }
     this.columns = [
       {
         dataField: 'productId',
@@ -135,23 +140,20 @@ export class ProductDashboardComponent implements OnInit {
   }
 
   private loadInitialData(): void {
-    this.isLoading.set(true);
-
     forkJoin({
       categories: this.productService.getCategories(),
-      statusProducts: this.productService.getStatusProducts(),})
-      .subscribe({
-        next: (res) => {
-          this.categoryOptions = res.categories || [];
-          this.statusOptions = res.statusProducts || [];
+      statusProducts: this.productService.getStatusProducts(),
+    }).subscribe({
+      next: (res) => {
+        this.categoryOptions = res.categories || [];
+        this.statusOptions = res.statusProducts || [];
 
-          this.fetchProducts();
-        },
-        error: (err) => {
-          console.error('API Error:', err);
-          this.isLoading.set(false);
-        }
-      })
+        this.fetchProducts();
+      },
+      error: (err) => {
+        console.error('API Error:', err);
+      },
+    });
   }
 
   // ======================================
@@ -163,14 +165,18 @@ export class ProductDashboardComponent implements OnInit {
         text: 'ยกเลิก',
         type: 'normal',
         stylingMode: 'outlined',
-        onClick: () => { this.isPopupVisible = false; },
+        onClick: () => {
+          this.isPopupVisible = false;
+        },
       },
       {
         text: 'บันทึก',
         type: 'success',
         stylingMode: 'contained',
         icon: 'save',
-        onClick: () => { this.saveProduct(); },
+        onClick: () => {
+          this.saveProduct();
+        },
       },
     ];
   }
@@ -191,7 +197,9 @@ export class ProductDashboardComponent implements OnInit {
         type: 'danger',
         stylingMode: 'contained',
         icon: 'trash',
-        onClick: () => { this.confirmDelete(); },
+        onClick: () => {
+          this.confirmDelete();
+        },
       },
     ];
   }
@@ -202,24 +210,24 @@ export class ProductDashboardComponent implements OnInit {
   private mapToProductList(res: ProductSearchResponseModel): ProductList {
     // ดักจับกรณีที่ res.categoryId เป็น null หรือ undefined
     const categoryIds = res.categoryId || [];
-    
-    const categoryNames = categoryIds.map(id => {
-      const option = this.categoryOptions.find(opt => opt.key === String(id));
+
+    const categoryNames: string[] = categoryIds.map((id) => {
+      const option = this.categoryOptions.find((opt) => Number(opt.key) === Number(id));
       return option ? option.value : String(id);
-    }).join(', ');
+    });
 
     return {
-      productId:          res.productId,
-      productName:        res.productName,
-      price:              res.price,
-      detail:             res.detail,
-      quantity:           res.quantity,
-      imagePath:          res.imagePath,
-      statusProductCode:  res.statusProductCode,
-      categoryId:         categoryIds,
-      categoryNames:      categoryNames,
-      createdAt:          res.createdAt,
-      updatedAt:          res.updatedAt,
+      productId: res.productId,
+      productName: res.productName,
+      price: res.price,
+      detail: res.detail,
+      quantity: res.quantity,
+      imagePath: res.imagePath,
+      statusProductCode: res.statusProductCode,
+      categoryId: categoryIds,
+      categoryNames: categoryNames,
+      createdAt: res.createdAt,
+      updatedAt: res.updatedAt,
     };
   }
 
@@ -227,35 +235,27 @@ export class ProductDashboardComponent implements OnInit {
   // API: ดึงข้อมูลสินค้า
   // ======================================
   private fetchProducts(): void {
-    this.isLoading.set(true);
-
     const request: ProductSearchRequestModel = {
-      keyword:        this.searchKeyword || null,
-      filterActive:   this.filterActive,
+      keyword: this.searchKeyword || null,
+      filterActive: this.filterActive,
       filterInactive: this.filterInactive,
-      categoryIds:    this.selectedCategories.length > 0
-                        ? this.selectedCategories.map(Number)
-                        : null,
-      pageNumber:     this.currentPage,
-      pageSize:       this.pageSize,
+      categoryIds: this.selectedCategories.length > 0 ? this.selectedCategories.map(Number) : null,
+      pageNumber: this.currentPage,
+      pageSize: this.pageSize,
     };
 
-    this.productService.searchProducts(request)
-      .pipe(
-        finalize(() => this.isLoading.set(false))
-      )
-      .subscribe({
-        next: (res) => {
-          console.log('API Response:', res);
-          const items = (res as any).Item || res.item || [];
-          this.totalCount = res.totalCount || (res as any).TotalCount || 0;
-          this.filteredProducts = items.map((p: any) => this.mapToProductList(p));
-        },
-        error: (err) => {
-          console.error('API Error:', err);
-          this.filteredProducts = [];
-        }
-      });
+    this.productService.searchProducts(request).subscribe({
+      next: (res) => {
+        console.log('API Response:', res);
+        const items = (res as any).Item || res.item || [];
+        this.totalCount = res.totalCount || (res as any).TotalCount || 0;
+        this.filteredProducts = items.map((p: any) => this.mapToProductList(p));
+      },
+      error: (err) => {
+        console.error('API Error:', err);
+        this.filteredProducts = [];
+      },
+    });
   }
 
   // ======================================
@@ -272,33 +272,72 @@ export class ProductDashboardComponent implements OnInit {
   public onAddNewProduct(): void {
     this.popupMode = 'ADD';
     this.productForm = new ProductForm();
-    setTimeout(() => { this.isPopupVisible = true; });
+    setTimeout(() => {
+      this.isPopupVisible = true;
+    });
   }
 
   public onEdit(rowData: ProductList): void {
     this.popupMode = 'EDIT';
     this.productForm = {
-      productId:         rowData.productId,
-      productName:       rowData.productName,
-      price:             rowData.price,
-      quantity:          rowData.quantity,
-      detail:            rowData.detail,
+      productId: rowData.productId,
+      productName: rowData.productName,
+      price: rowData.price,
+      quantity: rowData.quantity,
+      detail: rowData.detail,
       statusProductCode: rowData.statusProductCode,
-      imagePath:         rowData.imagePath,
-      categoryId:        [...rowData.categoryId],
+      imagePath: rowData.imagePath,
+      categoryId: [...rowData.categoryId],
+      updatedAt: rowData.updatedAt,
     };
-    setTimeout(() => { this.isPopupVisible = true; });
+    setTimeout(() => {
+      this.isPopupVisible = true;
+    });
   }
 
   public saveProduct(): void {
-    // TODO: เรียก API Create/Update เมื่อมี endpoint พร้อม
-    // ตอนนี้ปิด popup แล้ว Refresh ตาราง
-    this.isPopupVisible = false;
-    this.fetchProducts();
+    this.productState.clearAllError();
+
+    const payload = {
+      productId: Number(this.productForm.productId), // แปลงเป็น Number ป้องกัน ASP.NET binding error
+      productName: this.productForm.productName,
+      price: Number(this.productForm.price),
+      detail: this.productForm.detail || '',
+      quantity: Number(this.productForm.quantity),
+      imagePath: this.productForm.imagePath || '',
+      statusProductCode: this.productForm.statusProductCode,
+      categoryId: this.productForm.categoryId.map(Number),
+      updateAt: this.productForm.updatedAt, // ส่งให้ตรงกับ property UpdateAt ใน C#
+    };
+
+    if (this.popupMode === 'ADD') {
+      this.productService.createProduct(payload, this.productState).subscribe({
+        next: (res) => {
+          this.isPopupVisible = false;
+          this.fetchProducts();
+        },
+        error: (err) => {
+          console.error('API Error:', err);
+        },
+      });
+    } else if (this.popupMode === 'EDIT') {
+      this.productState.clearAllError();
+      this.productService.updateProduct(payload, this.productState).subscribe({
+        next: (res) => {
+          notify({ message: 'แก้ไขสินค้าสำเร็จ', type: 'success', displayTime: 2500 });
+          this.isPopupVisible = false;
+          this.fetchProducts();
+        },
+        error: (err) => {
+          console.error('API Error:', err);
+        },
+      });
+    }
   }
 
   public onProductPopupHidden(): void {
     this.productForm = new ProductForm();
+    this.productState.clearAllError();
   }
 
   // ======================================

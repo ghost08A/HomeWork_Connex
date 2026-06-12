@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -24,5 +24,11 @@ namespace HomeWork.Domain.RequestModels.ProductRequestModel
         public string ImagePath { get; set; }
         public string StatusProductCode { get; set; } = "ACTIVE";
         public List<int> CategoryId { get; set; }
+    }
+
+    public class UpdateProductRequestModel : CreateProductRequestModel
+    {
+        public int ProductId { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
 }

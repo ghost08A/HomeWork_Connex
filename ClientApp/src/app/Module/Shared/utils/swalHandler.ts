@@ -22,7 +22,7 @@ export const catchErrorHandler = (
       }
     });
     
-    notify({ message: 'userName หรือ password ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง', type: 'error', displayTime: 3000 });
+    notify({ message: 'กรุณาตรวจสอบข้อมูลให้ถูกต้อง', type: 'error', displayTime: 3000 });
   } 
   // 2. ดักจับ Error ร้ายแรงอื่นๆ (เช่น 500 Server Error)
   else {

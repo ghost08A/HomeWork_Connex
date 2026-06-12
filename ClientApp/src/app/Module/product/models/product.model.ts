@@ -11,7 +11,7 @@ export interface ProductList {
     imagePath: string;
     statusProductCode: string;
     categoryId: number[];
-    categoryNames?: string;      // แปลงจาก categoryId → ชื่อ เพื่อแสดงในตาราง
+    categoryNames: string[];     // array ของชื่อประเภท แปลงจาก categoryId[]
     createdAt?: string | Date;   // ตรงกับ Backend (createdAt)
     updatedAt?: string | Date;   // ตรงกับ Backend (updatedAt)
 }
@@ -28,6 +28,7 @@ export class ProductForm {
     imagePath: string = '';
     statusProductCode: string = 'ACTIVE';
     categoryId: number[] = [];
+    updatedAt?: string | Date|null = null;
 }
 
 // ======================================
