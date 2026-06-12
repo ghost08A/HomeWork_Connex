@@ -14,4 +14,15 @@ namespace HomeWork.Domain.RequestModels.ProductRequestModel
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }
+
+    public class CreateProductRequestModel
+    {
+        public string ProductName { get; set; }
+        public decimal Price { get; set; }
+        public string Detail { get; set; }
+        public int Quantity { get; set; }
+        public string ImagePath { get; set; }
+        public string StatusProductCode { get; set; } = "ACTIVE";
+        public List<int> CategoryId { get; set; }
+    }
 }

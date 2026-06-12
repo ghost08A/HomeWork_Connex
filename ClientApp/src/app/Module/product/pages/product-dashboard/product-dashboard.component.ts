@@ -1,4 +1,6 @@
-import { Component, OnInit, AfterViewInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef, signal } from '@angular/core';
+import { finalize } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
 import {
   ActionButton,
   ColumnConfig,
@@ -32,30 +34,16 @@ import { ProductService } from '../../service/product.service';
   templateUrl: './product-dashboard.component.html',
   styleUrl: './product-dashboard.component.scss',
 })
-export class ProductDashboardComponent implements OnInit, AfterViewInit {
+export class ProductDashboardComponent implements OnInit {
 
   constructor(private productService: ProductService) {}
 
   // ======================================
   // ตัวเลือก Category — key เป็น string ตาม valueOption interface
   // ======================================
-  public categoryOptions: valueOption[] = [
-    { key: '1',  value: 'อุปกรณ์ไอที' },
-    { key: '2',  value: 'เครื่องเขียนและอุปกรณ์สำนักงาน' },
-    { key: '3',  value: 'วัสดุสิ้นเปลือง (กระดาษ, หมึกพิมพ์)' },
-    { key: '4',  value: 'อุปกรณ์ทำความสะอาด' },
-    { key: '5',  value: 'อาหารและเครื่องดื่ม (Pantry)' },
-    { key: '6',  value: 'เวชภัณฑ์และตู้ยา' },
-    { key: '7',  value: 'เครื่องใช้ไฟฟ้าส่วนกลาง' },
-    { key: '8',  value: 'เฟอร์นิเจอร์สำนักงาน' },
-    { key: '9',  value: 'อุปกรณ์เพื่อความปลอดภัย (PPE)' },
-    { key: '10', value: 'เครื่องมือช่างและซ่อมบำรุง' },
-  ];
+  public categoryOptions: valueOption[] = [];
 
-  public statusOptions: valueOption[] = [
-    { key: 'ACTIVE',   value: '🟢 ใช้งาน (ACTIVE)' },
-    { key: 'INACTIVE', value: '🔴 ระงับการใช้งาน (INACTIVE)' },
-  ];
+  public statusOptions: valueOption[] = [];
 
   // ======================================
   // ตัวแปรค้นหา / Filter
@@ -72,7 +60,9 @@ export class ProductDashboardComponent implements OnInit, AfterViewInit {
   public totalCount: number = 0;
   public currentPage: number = 1;
   public pageSize: number = 10;
-  public isLoading: boolean = false;
+
+  // ใช้ signal() เฉพาะ isLoading เพื่อให้ @if รู้ค่าทันทีเมื่อ async callback เปลี่ยนค่า
+  public isLoading = signal<boolean>(true);
 
   // ======================================
   // Popup & Form
@@ -87,6 +77,7 @@ export class ProductDashboardComponent implements OnInit, AfterViewInit {
   // Column & Action
   // ======================================
   @ViewChild('statusTemplate', { static: true }) statusTemplate!: TemplateRef<any>;
+  @ViewChild('categoryNamesTemplate', { static: true }) categoryNamesTemplate!: TemplateRef<any>;
   public columns: ColumnConfig[] = [];
 
   public actionButtons: ActionButton[] = [
@@ -111,11 +102,7 @@ export class ProductDashboardComponent implements OnInit, AfterViewInit {
   // Lifecycle Hooks
   // ======================================
   ngOnInit(): void {
-    this.fetchProducts();
-  }
-
-  ngAfterViewInit(): void {
-    // ต้องรอ ViewChild (statusTemplate) พร้อมก่อนจึงค่อย setup columns
+    // ตั้งค่า Columns เลยตั้งแต่แรก เนื่องจาก ViewChild มี { static: true } 
     this.columns = [
       {
         dataField: 'productId',
@@ -133,6 +120,7 @@ export class ProductDashboardComponent implements OnInit, AfterViewInit {
         dataField: 'categoryNames',
         caption: 'ประเภทสินค้า',
         alignment: 'left',
+        cellTemplate: this.categoryNamesTemplate,
       },
       {
         dataField: 'statusProductCode',
@@ -142,6 +130,28 @@ export class ProductDashboardComponent implements OnInit, AfterViewInit {
         cellTemplate: this.statusTemplate,
       },
     ];
+
+    this.loadInitialData();
+  }
+
+  private loadInitialData(): void {
+    this.isLoading.set(true);
+
+    forkJoin({
+      categories: this.productService.getCategories(),
+      statusProducts: this.productService.getStatusProducts(),})
+      .subscribe({
+        next: (res) => {
+          this.categoryOptions = res.categories || [];
+          this.statusOptions = res.statusProducts || [];
+
+          this.fetchProducts();
+        },
+        error: (err) => {
+          console.error('API Error:', err);
+          this.isLoading.set(false);
+        }
+      })
   }
 
   // ======================================
@@ -190,7 +200,10 @@ export class ProductDashboardComponent implements OnInit, AfterViewInit {
   // Helper: แปลง API Response → ProductList
   // ======================================
   private mapToProductList(res: ProductSearchResponseModel): ProductList {
-    const categoryNames = res.categoryId.map(id => {
+    // ดักจับกรณีที่ res.categoryId เป็น null หรือ undefined
+    const categoryIds = res.categoryId || [];
+    
+    const categoryNames = categoryIds.map(id => {
       const option = this.categoryOptions.find(opt => opt.key === String(id));
       return option ? option.value : String(id);
     }).join(', ');
@@ -203,8 +216,8 @@ export class ProductDashboardComponent implements OnInit, AfterViewInit {
       quantity:           res.quantity,
       imagePath:          res.imagePath,
       statusProductCode:  res.statusProductCode,
-      categoryId:         res.categoryId,
-      categoryNames,
+      categoryId:         categoryIds,
+      categoryNames:      categoryNames,
       createdAt:          res.createdAt,
       updatedAt:          res.updatedAt,
     };
@@ -214,13 +227,12 @@ export class ProductDashboardComponent implements OnInit, AfterViewInit {
   // API: ดึงข้อมูลสินค้า
   // ======================================
   private fetchProducts(): void {
-    this.isLoading = true;
+    this.isLoading.set(true);
 
     const request: ProductSearchRequestModel = {
       keyword:        this.searchKeyword || null,
       filterActive:   this.filterActive,
       filterInactive: this.filterInactive,
-      // TagBox ส่ง string[] → แปลงเป็น number[]
       categoryIds:    this.selectedCategories.length > 0
                         ? this.selectedCategories.map(Number)
                         : null,
@@ -228,14 +240,22 @@ export class ProductDashboardComponent implements OnInit, AfterViewInit {
       pageSize:       this.pageSize,
     };
 
-    this.productService.searchProducts(request).subscribe({
-      next: (res) => {
-        this.filteredProducts = res.item.map(p => this.mapToProductList(p));
-        this.totalCount       = res.totalCount;
-        this.isLoading        = false;
-      },
-      error: () => { this.isLoading = false; }
-    });
+    this.productService.searchProducts(request)
+      .pipe(
+        finalize(() => this.isLoading.set(false))
+      )
+      .subscribe({
+        next: (res) => {
+          console.log('API Response:', res);
+          const items = (res as any).Item || res.item || [];
+          this.totalCount = res.totalCount || (res as any).TotalCount || 0;
+          this.filteredProducts = items.map((p: any) => this.mapToProductList(p));
+        },
+        error: (err) => {
+          console.error('API Error:', err);
+          this.filteredProducts = [];
+        }
+      });
   }
 
   // ======================================

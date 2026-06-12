@@ -123,7 +123,7 @@ namespace HomeWork.Service.ImplementServices.RawSqlServices
             ");
 
             // ORDER BY + Pagination
-            sqlSelect.Append(@" ORDER BY p.""ProductId"" DESC LIMIT @Limit OFFSET @Offset ");
+            sqlSelect.Append(@" ORDER BY p.""ProductId"" ASC LIMIT @Limit OFFSET @Offset ");
             parameters.Add("Limit", request.PageSize);
             parameters.Add("Offset", (request.PageNumber - 1) * request.PageSize);
 

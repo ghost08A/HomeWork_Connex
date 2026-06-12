@@ -8,10 +8,7 @@ using HomeWork.Domain.Models;
 using HomeWork.Domain.Share.Errors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.IdentityModel.Tokens.Jwt;
+using HomeWork.Service.Helper;
 
 
 using System.Text;
@@ -46,7 +43,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
                 error.AddErrorKeyAndToast("password", "กรุณากรอก password");
             }
             error.ThrowIfError();
-            string hashPassword = ComputeSHA512(request.Password);
+            string hashPassword = CommonHelper.ComputeSHA512(request.Password);
 
             var user = await _context.Users
                 .Include(user => user.UserRoles)
@@ -245,12 +242,11 @@ namespace HomeWork.Service.ImplementServices.AuthService
             var newUser = new User
             {
                 Username = request.Username,
-                PasswordHash = ComputeSHA512(request.Password), // เข้ารหัสผ่านก่อนลง DB เสมอ
+                PasswordHash = CommonHelper.ComputeSHA512(request.Password),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Phone = request.Phone,
                 BirthDate = birthDateOnly,
-                //RoleCode = "member", // กำหนดสิทธิ์เริ่มต้นเป็น member ธรรมดา
                 CreatedAt = DateTime.UtcNow
             };
             var userRole = new UserRole
@@ -276,22 +272,18 @@ namespace HomeWork.Service.ImplementServices.AuthService
             {
                 error.AddErrorKeyAndToast("username", "ความยาวห้ามเกิน 200");
             }
-            else if (ContainsEmoji(request.Username))
+            else if (CommonHelper.ContainsEmoji(request.Username))
             {
                 error.AddErrorKeyAndToast("username", "ห้ามใส่ emoji");
             }
-
-            // เช็ค Password ตรงกันไหม
             if (request.Password != request.ConfirmPassword)
             {
                 error.AddError("รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน");
             }
-            // เช็คเบอร์โทรศัพท์ (ไม่เกิน 10 ตัวอักษร และต้องเป็นตัวเลขล้วน)
             if (request.Phone?.Length > 10 || !request.Phone.All(char.IsDigit))
             {
                 error.AddErrorKeyAndToast("phone", "เบอร์โทรศัพท์ต้องเป็นตัวเลข และความยาวไม่เกิน 10 หลัก");
             }
-            // เช็คอายุ (ต้องอยู่ระหว่าง 1 - 100 ปี)
             if (int.TryParse(request.Age, out int age))
             {
                 if (age < 1 || age > 100)
@@ -305,7 +297,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
             {
                 error.AddErrorKeyAndToast("firstname", "กรุณากรอกชื่อจริง");
             }
-            else if (ContainsEmoji(request.FirstName))
+            else if (CommonHelper.ContainsEmoji(request.FirstName))
             {
                 error.AddErrorKeyAndToast("firstname", "ห้ามใส่ emoji");
             }
@@ -317,7 +309,7 @@ namespace HomeWork.Service.ImplementServices.AuthService
             {
                 error.AddErrorKeyAndToast("lastname", "กรุณากรอกนามสกุล");
             }
-            else if (ContainsEmoji(request.LastName))
+            else if (CommonHelper.ContainsEmoji(request.LastName))
             {
                 error.AddErrorKeyAndToast("lastname", "ห้ามใส่ emoji");
             }
@@ -327,27 +319,9 @@ namespace HomeWork.Service.ImplementServices.AuthService
             }
         }
 
-        public static string ComputeSHA512(string s)
-        {
-            StringBuilder sb = new StringBuilder();
-            using (SHA512 sha512 = SHA512.Create())
-            {
-                byte[] hashValue = sha512.ComputeHash(Encoding.UTF8.GetBytes(s));
-                foreach (byte b in hashValue)
-                {
-                    sb.Append($"{b:X2}");
-                }
-            }
+       
 
-            return sb.ToString();
-        }
-
-        private bool ContainsEmoji(string text)
-        {
-            if (string.IsNullOrEmpty(text)) return false;
-            // เช็คว่ามีอักขระที่เป็น Surrogate (Emoji) ปะปนมาหรือไม่
-            return text.Any(char.IsSurrogate);
-        }
+       
         private void SetJWTTokenService(User user, out string accessToken, out string refreshToken)
         {
             List<string> userRoles = user.UserRoles.Select(user => user.RoleCode).ToList();

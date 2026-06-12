@@ -70,20 +70,28 @@
       </div>
     </div>
   </div>
-  <custom-data-grid
-    [dataSource]="filteredProducts"
-    keyExpr="productId"
-    [columns]="columns"
-    [actionButtons]="actionButtons"
-    actionColumnCaption="จัดการ"
-    [actionColumnWidth]="200"
-    [hasDetailRow]="true"
-    [masterDetailTemplate]="productDetailTemplate"
-    [showSearchPanel]="false"
-    [pageSize]="10"
-    (rowClick)="onRowClick($event)"
-  >
-  </custom-data-grid>
+  <!-- Table Section / Loading State -->
+  @if(isLoading()) {
+    <div class="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-md border border-gray-200">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+      <p class="text-gray-500 font-medium text-lg">กำลังโหลดข้อมูลสินค้า...</p>
+    </div>
+  } @else {
+    <custom-data-grid
+      [dataSource]="filteredProducts"
+      keyExpr="productId"
+      [columns]="columns"
+      [actionButtons]="actionButtons"
+      actionColumnCaption="จัดการ"
+      [actionColumnWidth]="200"
+      [hasDetailRow]="true"
+      [masterDetailTemplate]="productDetailTemplate"
+      [showSearchPanel]="false"
+      [pageSize]="10"
+      (rowClick)="onRowClick($event)"
+    >
+    </custom-data-grid>
+  }
 </div>
 
 <!-- Template สถานะ -->
@@ -97,6 +105,21 @@
       >
         {{ cell.data.statusProductCode }}
       </span>
+    </ng-template>
+
+    <!-- Template ประเภทสินค้า -->
+    <ng-template #categoryNamesTemplate let-cell>
+      <div class="flex flex-wrap gap-2">
+        @if (cell.data.categoryNames?.length > 0) {
+          @for (categoryName of cell.data.categoryNames; track categoryName) {
+            <span class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+              {{ categoryName }}
+            </span>
+          }
+        } @else {
+          <span class="text-gray-400">-</span>
+        }
+      </div>
     </ng-template>
 
     <!-- Detail Row — แสดง price, detail, quantity, image, createdDate, updatedDate -->
@@ -175,6 +198,7 @@
 
       <custom-select-box
         label="สถานะ"
+        attributeName="statusProductCode"
         [dataSource]="statusOptions"
         [isRequired]="true"
         [(fieldValue)]="productForm.statusProductCode"
@@ -188,12 +212,14 @@
         type="Text"
         label="ชื่อสินค้า"
         placeholder="กรอกชื่อสินค้า"
+        attributeName="productName"
         [isRequired]="true"
         [(fieldValue)]="productForm.productName">
       </custom-input>
 
       <custom-tag-box
         label="ประเภทสินค้า"
+        attributeName="categoryId"
         [dataSource]="categoryOptions"
         [(fieldValue)]="productForm.categoryId"
         [isRequired]="true"
@@ -208,6 +234,7 @@
       <custom-input
         type="Number"
         label="ราคา"
+        attributeName="price"
         placeholder="กรอกราคา"
         [isRequired]="true"
         [(fieldValue)]="productForm.price">
@@ -216,6 +243,7 @@
       <custom-input
         type="Number"
         label="จำนวนคงเหลือ"
+        attributeName="quantity"
         placeholder="กรอกจำนวน"
         [isRequired]="true"
         [(fieldValue)]="productForm.quantity">
@@ -226,6 +254,8 @@
       type="Text"
       label="ลิงก์รูปภาพ (Image URL)"
       placeholder="วางลิงก์รูปภาพที่นี่ (https://...)"
+      attributeName="imagePath"
+      [isRequired]="true"
       [(fieldValue)]="productForm.imagePath">
     </custom-input>
 
@@ -233,6 +263,8 @@
       type="TextArea"
       label="รายละเอียด"
       placeholder="กรอกรายละเอียด"
+      attributeName="detail"
+      [isRequired]="true"
       [(fieldValue)]="productForm.detail">
     </custom-input>
 

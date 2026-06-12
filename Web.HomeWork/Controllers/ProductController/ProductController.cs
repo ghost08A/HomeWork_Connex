@@ -20,6 +20,20 @@ namespace Web.HomeWork.Controllers.ProductController
             _productService = productService;
         }
 
+        [HttpGet("Categories")]
+        public async Task<IActionResult> GetCategories()
+        {
+            var categories = await _productService.GetGategories();
+            return Ok(categories);
+        }
+
+        [HttpGet("Statuses")]
+        public async Task<IActionResult> GetStatuses()
+        {
+            var statuses = await _productService.GetStatus();
+            return Ok(statuses);
+        }
+
         [HttpPost("ProductSearch")]
         public async Task<IActionResult> ProductSearch(ProductSearchRequestModel request)
         {
@@ -27,5 +41,14 @@ namespace Web.HomeWork.Controllers.ProductController
             var result = await _productService.SearchProductsAsync(request, error);
             return Ok(result);
         }
+
+        [HttpPost("CreateProduct")]
+        public async Task<IActionResult> CreateProduct(CreateProductRequestModel request)
+        {
+            CustomError error = new CustomError();
+            await _productService.CreateProductAsync(request, error);
+            return Ok();
+        }
+
     }
 }
