@@ -29,6 +29,6 @@ namespace HomeWork.Domain.RequestModels.ProductRequestModel
     public class UpdateProductRequestModel : CreateProductRequestModel
     {
         public int ProductId { get; set; }
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime? updateAt { get; set; }
     }
 }
