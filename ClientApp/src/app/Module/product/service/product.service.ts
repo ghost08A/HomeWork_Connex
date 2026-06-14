@@ -26,8 +26,8 @@ export class ProductService{
         return this.http.get<valueOption[]>(this.apiUrl + '/Statuses').pipe(this.apiPipe());
     }
 
-     public searchProducts(request: ProductSearchRequestModel): Observable<PageResultResponseModel<ProductSearchResponseModel>> {
-        return this.http.post<PageResultResponseModel<ProductSearchResponseModel>>(this.apiUrl + '/ProductSearch', request).pipe(this.apiPipe());
+     public searchProducts(request: any): Observable<any> {
+        return this.http.post<any>(this.apiUrl + '/ProductSearch', request).pipe(this.apiPipe());
     }
 
     public createProduct(request: ProductForm, validateHelper?: ErrorEditorState): Observable<any> {

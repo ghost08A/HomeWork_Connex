@@ -15,7 +15,7 @@ namespace HomeWork.Domain.Interfaces.Services.ProductService
 
         Task<List<ValueOptionResponseModel<string>>> GetStatus();
 
-        Task<PageResultResponseModel<ProductSearchResponseModel>> SearchProductsAsync(ProductSearchRequestModel request, CustomError error);
+        Task<object> SearchProductsAsync(ProductSearchRequestModel request, CustomError error);
 
         Task<string> CreateProductAsync(CreateProductRequestModel request, CustomError error);
 

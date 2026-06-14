@@ -11,7 +11,6 @@ import { CustomInputComponent } from '../../../Shared/components/custom-input/cu
 import {
   ProductForm,
   ProductList,
-  ProductSearchRequestModel,
   ProductSearchResponseModel,
 } from '../../models/product.model';
 import { CustomCheckboxComponent } from '../../../Shared/components/custom-checkbox/custom-checkbox.component';
@@ -24,6 +23,7 @@ import { ProductService } from '../../service/product.service';
 import { LoadingService } from '../../../Shared/services/loading.service';
 import { ErrorEditorState } from '../../../Shared/directives/validate-error.directive';
 import notify from 'devextreme/ui/notify';
+
 
 @Component({
   selector: 'product-dashboard',
@@ -44,6 +44,8 @@ import notify from 'devextreme/ui/notify';
 export class ProductDashboardComponent implements OnInit {
   public loadingService = inject(LoadingService);
   public productState = new ErrorEditorState();
+
+  
   constructor(private productService: ProductService) {}
 
   // ======================================
@@ -65,9 +67,6 @@ export class ProductDashboardComponent implements OnInit {
   // ข้อมูลตาราง
   // ======================================
   public filteredProducts: ProductList[] = [];
-  public totalCount: number = 0;
-  public currentPage: number = 1;
-  public pageSize: number = 10;
 
   // ======================================
   // Popup & Form
@@ -93,14 +92,14 @@ export class ProductDashboardComponent implements OnInit {
       stylingMode: 'text',
       onClick: (rowData) => this.onEdit(rowData),
     },
-    {
-      text: '',
-      icon: 'trash',
-      type: 'danger',
-      stylingMode: 'text',
-      disabled: (rowData) => rowData.statusProductCode === 'ACTIVE',
-      onClick: (rowData) => this.onDelete(rowData),
-    },
+    // {
+    //   text: '',
+    //   icon: 'trash',
+    //   type: 'danger',
+    //   stylingMode: 'text',
+    //   disabled: (rowData) => rowData.statusProductCode === 'ACTIVE',
+    //   onClick: (rowData) => this.onDelete(rowData),
+    // },
   ];
 
   // ======================================
@@ -181,29 +180,6 @@ export class ProductDashboardComponent implements OnInit {
     ];
   }
 
-  get deleteButtons(): PopupButton[] {
-    return [
-      {
-        text: 'ยกเลิก',
-        type: 'normal',
-        stylingMode: 'outlined',
-        onClick: () => {
-          this.showDeletePopup = false;
-          this.productToDelete = null;
-        },
-      },
-      {
-        text: 'ยืนยันลบ',
-        type: 'danger',
-        stylingMode: 'contained',
-        icon: 'trash',
-        onClick: () => {
-          this.confirmDelete();
-        },
-      },
-    ];
-  }
-
   // ======================================
   // Helper: แปลง API Response → ProductList
   // ======================================
@@ -235,21 +211,18 @@ export class ProductDashboardComponent implements OnInit {
   // API: ดึงข้อมูลสินค้า
   // ======================================
   private fetchProducts(): void {
-    const request: ProductSearchRequestModel = {
+    const request = {
+      loadOptions: { requireTotalCount: true },
       keyword: this.searchKeyword || null,
       filterActive: this.filterActive,
       filterInactive: this.filterInactive,
-      categoryIds: this.selectedCategories.length > 0 ? this.selectedCategories.map(Number) : null,
-      pageNumber: this.currentPage,
-      pageSize: this.pageSize,
+      categoryIds: this.selectedCategories.length > 0 ? this.selectedCategories.map(Number) : null
     };
 
     this.productService.searchProducts(request).subscribe({
-      next: (res) => {
-        console.log('API Response:', res);
-        const items = (res as any).Item || res.item || [];
-        this.totalCount = res.totalCount || (res as any).TotalCount || 0;
-        this.filteredProducts = items.map((p: any) => this.mapToProductList(p));
+      next: (res: any) => {
+        const items = res.data ? res.data.map((p: any) => this.mapToProductList(p)) : [];
+        this.filteredProducts = items;
       },
       error: (err) => {
         console.error('API Error:', err);
@@ -262,7 +235,6 @@ export class ProductDashboardComponent implements OnInit {
   // Filter (เรียก API ใหม่)
   // ======================================
   public applyFilters(): void {
-    this.currentPage = 1;
     this.fetchProducts();
   }
 
@@ -314,7 +286,7 @@ export class ProductDashboardComponent implements OnInit {
       this.productService.createProduct(payload, this.productState).subscribe({
         next: (res) => {
           this.isPopupVisible = false;
-          this.fetchProducts();
+          this.applyFilters();
         },
         error: (err) => {
           console.error('API Error:', err);
@@ -326,7 +298,7 @@ export class ProductDashboardComponent implements OnInit {
         next: (res) => {
           notify({ message: 'แก้ไขสินค้าสำเร็จ', type: 'success', displayTime: 2500 });
           this.isPopupVisible = false;
-          this.fetchProducts();
+          this.applyFilters();
         },
         error: (err) => {
           console.error('API Error:', err);
@@ -340,28 +312,53 @@ export class ProductDashboardComponent implements OnInit {
     this.productState.clearAllError();
   }
 
-  // ======================================
-  // Popup: ลบ
-  // ======================================
-  public onDelete(rowData: ProductList): void {
-    this.productToDelete = rowData;
-    this.showDeletePopup = true;
-  }
-
-  public confirmDelete(): void {
-    if (!this.productToDelete) return;
-    // TODO: เรียก API Delete ด้วย this.productToDelete.productId
-    console.log('ลบสินค้า:', this.productToDelete);
-    this.productToDelete = null;
-    this.showDeletePopup = false;
-    this.fetchProducts();
-  }
-
-  public onDeletePopupHidden(): void {
-    this.productToDelete = null;
-  }
-
   public onRowClick(rowData: any): void {
     console.log('คลิกแถว:', rowData);
   }
 }
+
+
+// get deleteButtons(): PopupButton[] {
+//     return [
+//       {
+//         text: 'ยกเลิก',
+//         type: 'normal',
+//         stylingMode: 'outlined',
+//         onClick: () => {
+//           this.showDeletePopup = false;
+//           this.productToDelete = null;
+//         },
+//       },
+//       {
+//         text: 'ยืนยันลบ',
+//         type: 'danger',
+//         stylingMode: 'contained',
+//         icon: 'trash',
+//         onClick: () => {
+//           this.confirmDelete();
+//         },
+//       },
+//     ];
+//   }
+
+
+// public confirmDelete(): void {
+//     if (!this.productToDelete) return;
+//     // TODO: เรียก API Delete ด้วย this.productToDelete.productId
+//     console.log('ลบสินค้า:', this.productToDelete);
+//     this.productToDelete = null;
+//     this.showDeletePopup = false;
+//     this.fetchProducts();
+//   }
+
+//   public onDeletePopupHidden(): void {
+//     this.productToDelete = null;
+//   }
+
+// ======================================
+  // Popup: ลบ
+  // ======================================
+  // public onDelete(rowData: ProductList): void {
+  //   this.productToDelete = rowData;
+  //   this.showDeletePopup = true;
+  // }

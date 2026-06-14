@@ -42,6 +42,7 @@ namespace Web.HomeWork.Controllers.ProductController
             return Ok(result);
         }
 
+
         [HttpPost("CreateProduct")]
         public async Task<IActionResult> CreateProduct(CreateProductRequestModel request)
         {

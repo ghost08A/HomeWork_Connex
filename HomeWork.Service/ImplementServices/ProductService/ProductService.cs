@@ -27,18 +27,48 @@ namespace HomeWork.Service.ImplementServices.ProductService
             _tokenService = tokenService;
         }
 
-        public async Task<PageResultResponseModel<ProductSearchResponseModel>> SearchProductsAsync(ProductSearchRequestModel request, CustomError error)
+        public async Task<object> SearchProductsAsync(ProductSearchRequestModel request, CustomError error)
         {
-            if(request.PageSize<10 || request.PageSize >= 100)
+            var query = _context.Products
+                .Include(p => p.ProductCategories)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(request.Keyword))
             {
-                error.AddError("PageSize ควรอยู่ในช่วง 10-100");
+                query = query.Where(p => p.ProductName.Contains(request.Keyword));
             }
 
-            
-            var product = await _rawSqlService.SearchProductsAsync(request);
+            bool bothUnchecked = !request.FilterActive && !request.FilterInactive;
+            if (!bothUnchecked)
+            {
+                var activeStatuses = new List<string>();
+                if (request.FilterActive) activeStatuses.Add("ACTIVE");
+                if (request.FilterInactive) activeStatuses.Add("INACTIVE");
+                
+                query = query.Where(p => activeStatuses.Contains(p.StatusProductCode));
+            }
 
-            return product;
+            if (request.CategoryIds != null && request.CategoryIds.Any())
+            {
+                query = query.Where(p => p.ProductCategories.Any(pc => request.CategoryIds.Contains(pc.CategoryId)));
+            }
 
+            var selectQuery = query.Select(p => new ProductSearchResponseModel
+            {
+                ProductId = p.ProductId,
+                ProductName = p.ProductName,
+                Price = p.Price,
+                Detail = p.Detail,
+                Quantity = p.Quantity,
+                ImagePath = p.ImagePath,
+                StatusProductCode = p.StatusProductCode,
+                CreatedAt = p.CreatedAt,
+                UpdatedAt = p.UpdatedAt,
+                CategoryId = p.ProductCategories.Select(pc => pc.CategoryId).ToList()
+            });
+
+            return await DevExtreme.AspNet.Data.DataSourceLoader.LoadAsync(selectQuery, request.LoadOptions);
         }
 
         public async Task<List<ValueOptionResponseModel<int>>> GetGategories()
