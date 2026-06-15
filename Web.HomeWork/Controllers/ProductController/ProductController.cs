@@ -59,5 +59,12 @@ namespace Web.HomeWork.Controllers.ProductController
             return Ok();
         }
 
+        [HttpPost("UpsertProduct")]
+        public async Task<IActionResult> UpsertProduct(UpsertProductRequestModel request)
+        {
+            CustomError error = new CustomError();
+            await _productService.UpsertProductAsync(request, error);
+            return Ok();
+        }
     }
 }

@@ -1,10 +1,10 @@
-.order-dashboard {
+.order-Lists {
   min-height: 100vh;
   padding: 24px 32px;
 }
 
-.dashboard-header{
-    margin-bottom: 24px;
+.order-Lists-header{
+    margin-bottom: 16px;
 
     .header-title{
         font-size: 30px;
@@ -13,9 +13,21 @@
         letter-spacing: -0.5px;
     }
 
-    .header-divider{
+ 
+}
+   .divider{
         margin-top: 16px;
         border: none;
         border-top: 1px solid #D1D5DB; 
     }
+.search-form-container{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+
+    @media (min-width: 768px) {
+        grid-template-columns: 1fr 1fr;
+    }
 }
+

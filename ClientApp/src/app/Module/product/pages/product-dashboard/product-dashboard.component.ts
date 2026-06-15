@@ -1,4 +1,5 @@
 import { Component, OnInit, ViewChild, TemplateRef, inject } from '@angular/core';
+import { DecimalPipe, DatePipe } from '@angular/common';
 import { forkJoin, lastValueFrom } from 'rxjs';
 import {
   ActionButton,
@@ -16,7 +17,6 @@ import {
 } from '../../models/product.model';
 import { CustomCheckboxComponent } from '../../../Shared/components/custom-checkbox/custom-checkbox.component';
 import { CustomDataGridComponent } from '../../../Shared/components/custom-data-grid/custom-data-grid.component';
-import { DecimalPipe, DatePipe } from '@angular/common';
 import { CustomButtonComponent } from '../../../Shared/components/custom-button/custom-button.component';
 import { CustomPopupComponent } from '../../../Shared/components/custom-popup/custom-popup.component';
 import { CustomSelectBoxComponent } from '../../../Shared/components/custom-select-box/custom-select-box.component';
@@ -45,8 +45,6 @@ import { LoadOptions } from 'devextreme/data';
   styleUrl: './product-dashboard.component.scss',
 })
 export class ProductDashboardComponent implements OnInit {
-  // loadingService ยังคงใช้ได้กับส่วนอื่นของหน้า (header, popup, ฯลฯ)
-  // แต่ไม่ได้ครอบตัวกริดแล้ว เพราะ CustomStore จัดการ loading เอง
   public loadingService = inject(LoadingService);
   public productState = new ErrorEditorState();
 
@@ -271,8 +269,10 @@ export class ProductDashboardComponent implements OnInit {
   public saveProduct(): void {
     this.productState.clearAllError();
 
+    // ถ้า ADD → productId = null → Backend จะ Create
+    // ถ้า EDIT → productId = ตัวเลข → Backend จะ Update
     const payload: ProductForm = {
-      productId:          Number(this.productForm.productId),
+      productId:          this.popupMode === 'ADD' ? null : Number(this.productForm.productId),
       productName:        this.productForm.productName,
       price:              Number(this.productForm.price),
       detail:             this.productForm.detail || '',
@@ -283,32 +283,20 @@ export class ProductDashboardComponent implements OnInit {
       updatedAt:          this.productForm.updatedAt,
     };
 
-    if (this.popupMode === 'ADD') {
-      this.productService.createProduct(payload, this.productState).subscribe({
-        next: () => {
-          this.isPopupVisible = false;
-          this.dataGrid?.reload();
-        },
-        error: (err) => {
-          console.error('API Error:', err);
-        },
-      });
-    } else {
-      this.productService.updateProduct(payload, this.productState).subscribe({
-        next: () => {
-          notify({ message: 'แก้ไขสินค้าสำเร็จ', type: 'success', displayTime: 2500 });
-          this.isPopupVisible = false;
-          this.dataGrid?.reload();
-        },
-        error: (err) => {
-          console.error('API Error:', err);
-        },
-      });
-    }
+    this.productService.upsertProduct(payload, this.productState).subscribe({
+      next: () => {
+        const msg = this.popupMode === 'ADD' ? 'เพิ่มสินค้าสำเร็จ' : 'แก้ไขสินค้าสำเร็จ';
+        notify({ message: msg, type: 'success', displayTime: 2500 });
+        this.isPopupVisible = false;
+        this.dataGrid?.reload();
+      },
+      error: (err) => {
+        console.error('Upsert Error:', err);
+      },
+    });
   }
   public onProductPopupHidden(): void {
     this.productForm = new ProductForm();
     this.productState.clearAllError();
   }
-
 }

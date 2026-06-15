@@ -19,3 +19,145 @@
         border-top: 1px solid #D1D5DB; //เส้นสีเทาอ่อน
     }
 }
+
+.filter-card {
+  background-color: #FFFFFF;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #E5E7EB;
+  margin-bottom: 24px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr; //(เริ่มต้นบนมือถือให้มี 1 คอลัมน์)
+  gap: 24px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr ;
+  }
+}
+
+.filter-col{
+    display: flex;
+    flex-direction: column; //เรียงจากบนลงล่าง
+    gap: 16px;
+}
+
+.checkbox-group {
+ display: flex;
+ gap: 24px;
+ margin-top: 8px;
+}
+
+.filter-col-spaced {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; //กระจายช่องว่างระหว่าง tag box กับปุ่ม
+  gap: 16px;
+}
+
+.action-buttons-group{
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    padding-top: 16px;
+}
+
+.category-tag-container{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+ .category-badge{
+    display: inline-flex; //ทำให้ขนาดของ badge ปรับตามเนื้อหา
+    align-items: center;
+    padding: 4px 8px;
+    background-color: #eff6ff; //สีฟ้าอ่อน
+    border: 1px solid #bfdbfe; //เส้นขอบสีฟ้าอ่อน 
+    border-radius: 6px;
+
+    color: #1d4ed8; //สีฟ้าเข้มสำหรับข้อความ
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px; //ปรับให้ข้อความอยู่กึ่งกลางแนวตั้ง
+    
+}
+
+
+.product-detail-container{
+    padding: 16px;
+    background-color: #f9fafb;
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+}
+
+ .product-detail-image {
+  width: 128px; /* w-32 */
+  height: 128px; /* h-32 */
+  object-fit: cover; /* จัดรูปภาพให้เต็มกรอบโดยไม่เสียสัดส่วน */
+  border-radius: 4px; /* rounded (โค้งนิดๆ) */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1); /* shadow */
+}
+
+.product-detail-info{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1; //สั่งให้กล่องนี้ขยายตัวกินพื้นที่ความกว้างที่เหลือทั้งหมด
+
+    .product-title{
+        font-size: 18px;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .product-description{
+        font-size: 14px;
+        color: #4b5563;
+        line-height: 20px; 
+    }
+}
+
+.product-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* ค่าเริ่มต้นมือถือ (grid-cols-2): แบ่ง 2 คอลัมน์ */
+  gap: 24px; /* gap-6 */
+  margin-top: 8px; /* mt-2 */
+
+  @media (min-width: 768px) {
+    /* หน้าจอคอม (md:grid-cols-4): แบ่ง 4 คอลัมน์ */
+    grid-template-columns: 1fr 1fr 1fr 1fr; 
+  }
+}
+
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+
+  .stat-label {
+    display: block; /* block */
+    font-size: 12px; /* text-xs */
+    color: #9ca3af; /* text-gray-400 */
+    margin-bottom: 4px; /* mb-1 */
+  }
+
+  .stat-value {
+    font-size: 16px;
+    font-weight: 600; /* font-semibold */
+    
+    /* สีย่อยๆ สำหรับค่าตัวเลข */
+    &.text-blue { color: #2563eb; } /* text-blue-600 */
+    &.text-red { color: #ef4444; } /* text-red-500 */
+    &.text-green { color: #16a34a; } /* text-green-600 */
+  }
+
+  .stat-value-default {
+    font-size: 14px; 
+    color: #374151; 
+  }
+}

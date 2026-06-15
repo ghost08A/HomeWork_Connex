@@ -228,7 +228,88 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 error.ThrowIfError();
                 throw;
             }
+        }
 
+        public async Task<string> UpsertProductAsync(UpsertProductRequestModel request, CustomError error)
+        {
+            var user = _tokenService.GetCurrentUser();
+            var timeNow = DateTime.UtcNow;
+            ValidateProduct(request, error);
+
+            await ValidateDatabaseMasterDataAsync(request.CategoryId, request.StatusProductCode, error);
+            error.ThrowIfError();
+
+            Product product;
+            bool isCreate = !request.ProductId.HasValue || request.ProductId == 0;
+            if (isCreate)
+            {
+                product = new Product
+                {
+                    CreatedAt = timeNow,
+                    CreatedBy = user.UserId
+                };
+                _context.Products.Add(product);
+            }
+            else
+            {
+                product = await _context.Products
+                    .Include(p => p.ProductCategories)
+                    .FirstOrDefaultAsync(p => p.ProductId == request.ProductId);
+
+                if (product == null) error.AddError("productId", "ไม่พบข้อมูลสินค้า");
+                if (request.updateAt.HasValue && request.updateAt < product.UpdatedAt)
+                    error.AddError("เวอร์ชั่นไม่ตรงกันกรุณาลองใหม่อีกครั้ง");
+            }
+
+            error.ThrowIfError();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                product.ProductName = request.ProductName;
+                product.Price = request.Price; 
+                product.Detail = request.Detail;
+                product.Quantity = request.Quantity; 
+                product.ImagePath = request.ImagePath; 
+                product.StatusProductCode = request.StatusProductCode;
+
+                if (!isCreate)
+                {
+                    product.UpdatedAt = timeNow; 
+                    product.UpdatedBy = user.UserId; 
+                    _context.ProductCategories.RemoveRange(product.ProductCategories);
+                }
+
+                product.ProductCategories = request.CategoryId.Select(id => new ProductCategory
+                {
+                    ProductId = product.ProductId,
+                    CategoryId = id,
+                }).ToList();
+
+                await _context.SaveChangesAsync();
+                var log = new LogProduct 
+                { ProductId = product.ProductId, 
+                    Action = isCreate ? "CREATE" : "UPDATE",
+                    ProductName = product.ProductName, 
+                    Price = product.Price,
+                    Detail = product.Detail, 
+                    Quantity = product.Quantity, 
+                    ImagePath = product.ImagePath, 
+                    StatusProductCode = product.StatusProductCode, 
+                    CreatedAt = product.CreatedAt,
+                    CreatedBy = product.CreatedBy, 
+                    UpdatedAt = isCreate ? null : timeNow,
+                    UpdatedBy = isCreate ? null : user.UserId 
+                };
+                _context.LogProducts.Add(log); 
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync(); 
+                return isCreate ? "Create Success" : "Update Success";
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         private async Task ValidateDatabaseMasterDataAsync(List<int> categoryIds, string statusProductCode, CustomError error)
@@ -243,13 +324,12 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 error.AddError("statusProductCode", "ระบุสถานะสินค้าไม่ถูกต้อง หรือสถานะนี้ไม่มีอยู่ในระบบ");
             }
 
-            // 2. เช็คหมวดหมู่ (Category)
             if (categoryIds != null && categoryIds.Any())
             {
-                // ทริค: กำจัดเลขซ้ำเผื่อหน้าบ้านส่ง [1, 1, 2] มา
+                //กำจัดเลขซ้ำเผื่อหน้าบ้านส่ง [1, 1, 2] มา
                 var uniqueCategoryIds = categoryIds.Distinct().ToList();
 
-                // 🌟 ท่าไม้ตาย: นับจำนวนหมวดหมู่ใน DB ที่ตรงกับรหัสที่ส่งมา
+                // ท่าไม้ตาย: นับจำนวนหมวดหมู่ใน DB ที่ตรงกับรหัสที่ส่งมา
                 int existingCategoryCount = await _context.Categories
                     .CountAsync(c => uniqueCategoryIds.Contains(c.CategoryId));
 

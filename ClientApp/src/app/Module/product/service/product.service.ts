@@ -41,6 +41,10 @@ export class ProductService {
         return this.http.put<void>(this.apiUrl + '/UpdateProduct', request).pipe(this.apiPipe(validateHelper));
     }
 
+    public upsertProduct(request: ProductForm, validateHelper?: ErrorEditorState): Observable<void> {
+       return this.http.post<void>(this.apiUrl + '/UpsertProduct', request).pipe(this.apiPipe(validateHelper));
+    }
+
     // ตัวดักจับ Error
     private apiPipe<T>(validateHelper?: ErrorEditorState): MonoTypeOperatorFunction<T> {
         return (source$) => source$.pipe(catchError((err) => catchErrorHandler(err, validateHelper)));

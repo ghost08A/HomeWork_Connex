@@ -1,0 +1,26 @@
+<div class="w-full">
+
+  <!-- Label (optional) -->
+  @if (label) {
+    <label class="block mb-1 text-sm font-medium text-gray-700">
+      {{ label }}
+    </label>
+  }
+
+  <!--
+    วน loop dataSource สร้าง custom-checkbox ทีละอัน
+    จัด layout เป็น grid ตาม [columns]
+    ถ้าเกินจะ wrap ไปแถวถัดไปอัตโนมัติ
+  -->
+  <div [class]="gridClass">
+    @for (item of dataSource; track getKey(item)) {
+      <custom-checkbox
+        [label]="getLabel(item)"
+        [fieldValue]="isChecked(item)"
+        [isDisabled]="isDisabled"
+        (fieldValueChange)="onCheckChange(item, $event)">
+      </custom-checkbox>
+    }
+  </div>
+
+</div>

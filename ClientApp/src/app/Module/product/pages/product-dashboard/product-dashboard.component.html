@@ -6,21 +6,17 @@
   </div>
 
   <!-- Search & Filter Card -->
-  <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="filter-card">
+    <div class="filter-grid">
       <!-- Left Column: Search & Checkboxes -->
-      <div class="flex flex-col gap-4">
+      <div class="filter-col">
         <custom-input
           type="Text"
           label="ค้นหาสินค้า"
           placeholder="พิมพ์ชื่อสินค้าที่ต้องการค้นหา..."
           [(fieldValue)]="searchKeyword"
-        >
-        </custom-input>
-        <div class="flex flex-row gap-6 mt-2">
-          <!-- 
-            เปิดใช้ (fieldValueChange)="applyFilters()" ด้านล่าง หากต้องการค้นหาทันที (Real-time Search)
-          -->
+        />
+        <div class="checkbox-group">
           <custom-checkbox
             label="Active"
             [(fieldValue)]="filterActive"
@@ -33,10 +29,7 @@
       </div>
 
       <!-- Right Column: Tag Box & Buttons -->
-      <div class="flex flex-col justify-between gap-4">
-        <!-- 
-          เปิดใช้ (fieldValueChange)="applyFilters()" ด้านล่าง หากต้องการค้นหาทันที (Real-time Search)
-        -->
+      <div class="filter-col-spaced">
         <custom-tag-box
           label="ประเภทสินค้า"
           [dataSource]="categoryOptions"
@@ -48,7 +41,7 @@
         />
 
         <!-- Action Buttons -->
-        <div class="flex justify-end gap-3 mt-auto pt-4">
+        <div class="action-buttons-group">
           <custom-button
             text="เพิ่มสินค้า"
             icon="plus"
@@ -103,10 +96,10 @@
 
     <!-- Template ประเภทสินค้า -->
     <ng-template #categoryNamesTemplate let-cell>
-      <div class="flex flex-wrap gap-2">
+      <div class="category-tag-container">
         @if ((cell.data?.categoryNames ?? []).length > 0) {
           @for (categoryName of cell.data?.categoryNames ?? []; track $index) {
-            <span class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+            <span class="category-badge">
               {{ categoryName }}
             </span>
           }
@@ -118,43 +111,43 @@
 
     <!-- Detail Row — แสดง price, detail, quantity, image, createdDate, updatedDate -->
   <ng-template #productDetailTemplate let-data>
-    <div class="p-4 bg-gray-50 flex flex-row gap-6">
+    <div class="product-detail-container">
 
       <!-- รูปสินค้า -->
       <img
         [src]="data.imagePath"
         [alt]="data.productName"
-        class="w-32 h-32 object-cover rounded shadow">
+        class="product-detail-image">
 
       <!-- ข้อมูล detail -->
-      <div class="flex flex-col gap-2 flex-grow">
-        <p class="font-semibold text-lg">{{ data.productName }}</p>
-        <p class="text-sm text-gray-600">{{ data.detail }}</p>
+      <div class="product-detail-info">
+        <p class="product-title">{{ data.productName }}</p>
+        <p class="product-description">{{ data.detail }}</p>
         
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-2">
-          <div>
-            <span class="text-xs text-gray-400 block mb-1">ราคา</span>
-            <p class="font-semibold text-blue-600">
+        <div class="product-stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">ราคา</span>
+            <p class="stat-value text-blue">
               {{ data.price | number:'1.2-2' }} บาท
             </p>
           </div>
-          <div>
-            <span class="text-xs text-gray-400 block mb-1">จำนวนคงเหลือ</span>
-            <p class="font-semibold"
-              [class.text-red-500]="data.quantity === 0"
-              [class.text-green-600]="data.quantity > 0">
+          <div class="stat-item">
+            <span class="stat-label">จำนวนคงเหลือ</span>
+            <p class="stat-value text-blue"
+              [class.text-red]="data.quantity === 0"
+              [class.text-green]="data.quantity > 0">
               {{ data.quantity }} ชิ้น
             </p>
           </div>
-          <div>
-            <span class="text-xs text-gray-400 block mb-1">วันที่เพิ่มเข้าระบบ</span>
-            <p class="text-sm text-gray-700">
+          <div class="stat-item">
+            <span class="stat-label">วันที่เพิ่มเข้าระบบ</span>
+            <p class="stat-value-default">
               {{ data.createdAt | date:'dd/MMM/yyyy HH:mm' }}
             </p>
           </div>
-          <div>
-            <span class="text-xs text-gray-400 block mb-1">แก้ไขล่าสุด</span>
-            <p class="text-sm text-gray-700">
+          <div class="stat-item">
+            <span class="stat-label">แก้ไขล่าสุด</span>
+            <p class="stat-value-default">
               {{ data.updatedAt | date:'dd/MMM/yyyy HH:mm' }}
             </p>
           </div>

@@ -15,7 +15,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './custom-checkbox.component.html',
   styleUrl: './custom-checkbox.component.scss',
 })
-export class CustomCheckboxComponent {
+export class CustomCheckboxComponent implements OnChanges {
     @Input() fieldValue: boolean = false;
     @Input() label: string = '';
     @Input() isDisabled: boolean = false;

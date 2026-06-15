@@ -29,4 +29,10 @@ namespace HomeWork.Domain.RequestModels.ProductRequestModel
         public int ProductId { get; set; }
         public DateTime? updateAt { get; set; }
     }
+
+    public class UpsertProductRequestModel : CreateProductRequestModel
+    {
+        public int? ProductId { get; set; } // null = Create
+        public DateTime? updateAt { get; set; }
+    }
 }

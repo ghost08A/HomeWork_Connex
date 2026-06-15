@@ -22,7 +22,7 @@ export interface ProductList {
 // ProductForm — ใช้ใน Popup เพิ่ม/แก้ไข
 // ======================================
 export class ProductForm {
-    productId: number = 0;
+    productId: number | null = null;  // null = Create, มีค่า = Update
     productName: string = '';
     price: number = 0;
     detail: string = '';

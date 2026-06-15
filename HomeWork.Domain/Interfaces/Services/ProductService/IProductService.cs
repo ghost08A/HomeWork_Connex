@@ -20,5 +20,6 @@ namespace HomeWork.Domain.Interfaces.Services.ProductService
         Task<string> CreateProductAsync(CreateProductRequestModel request, CustomError error);
 
          Task<string> UpdateProductAsync(UpdateProductRequestModel request, CustomError error);
+        Task<string> UpsertProductAsync(UpsertProductRequestModel request, CustomError error);
     }
 }

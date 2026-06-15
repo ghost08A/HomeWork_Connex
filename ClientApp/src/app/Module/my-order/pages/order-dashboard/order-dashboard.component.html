@@ -1,7 +1,118 @@
-<div class="order-dashboard">
-  <div class="dashboard-header ">
-    <h1 class="header-title">Order Dashboard</h1>
-    <hr class="header-divider" />
+<div class="order-Lists">
+  <div class="order-Lists-header">
+    <h1 class="header-title">Order Lists</h1>
+    <hr class="divider" />
   </div>
+
+  <div class="search-form-container">
+    <div class="flex flex-col gap-6">
+      <div class="flex items-center gap-4">
+        <label class="w-24 text-right text-sm font-medium text-gray-700 flex-shrink-0">
+          Order Lists
+        </label>
+        <div class="flex-grow">
+          <custom-input type="Text" placeholder="( Text Box )" [(fieldValue)]="searchKeyword">
+          </custom-input>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-4">
+        <label class="w-24 text-right text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+          Status
+        </label>
+        <div class="flex-grow">
+          <custom-checkbox-group
+            [dataSource]="statusOptions"
+            [(fieldValue)]="selectedStatus"
+            [columns]="3"
+          >
+          </custom-checkbox-group>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="w-24 flex-shrink-0"></div>
+        <div class="flex-grow flex gap-3">
+          <custom-button
+            text="Search"
+            type="default"
+            stylingMode="contained"
+            (onClick)="onSearch()"
+          ></custom-button>
+          <custom-button
+            text="Clear"
+            type="normal"
+            stylingMode="outlined"
+            (onClick)="onClear()"
+          ></custom-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-6">
+      <div class="flex items-center gap-4">
+        <label class="w-24 text-right text-sm font-medium text-gray-700 flex-shrink-0">
+          Products
+        </label>
+        <div class="flex-grow">
+          <custom-tag-box
+            placeholder="( Multi Select Box )"
+            [dataSource]="categoryOptions"
+            [(fieldValue)]="selectedCategories"
+          >
+          </custom-tag-box>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <label class="w-24 text-right text-sm font-medium text-gray-700 flex-shrink-0">
+          Category
+        </label>
+        <div class="flex-grow">
+          <custom-tag-box
+            placeholder="( Multi Select Box )"
+            [dataSource]="categoryOptions"
+            [(fieldValue)]="selectedCategories"
+          >
+          </custom-tag-box>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+      <label class="w-24 text-right text-sm font-medium text-gray-700 flex-shrink-0">
+        Date Range
+      </label>
+      <div class="flex-grow flex items-center gap-2">
+        <div class="w-full">
+          <custom-input 
+            type="Date" 
+            placeholder="Start Date" 
+            [(fieldValue)]="startDate">
+          </custom-input>
+        </div>
+        <span class="text-gray-400 font-medium">-</span>
+        <div class="w-full">
+          <custom-input 
+            type="Date" 
+            placeholder="End Date" 
+            [(fieldValue)]="endDate">
+          </custom-input>
+        </div>
+      </div>
+    </div>
+      <hr class="divider" />
+    </div>
+  </div>
+  <custom-data-grid 
+  [dataSource]="gridDataSource" 
+  keyExpr="orderId" 
+  [columns]="masterColumns"
+  [actionButtons]="actionButtons"
+  actionColumnCaption="จัดการ"
+  [actionColumnWidth]="200"
+  [pageSize]="10"
+    [remoteOperations]="true"
+  />
+
 
 </div>
