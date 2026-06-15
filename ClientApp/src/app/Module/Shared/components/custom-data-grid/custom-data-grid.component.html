@@ -1,4 +1,5 @@
 <dx-data-grid
+  #dataGrid
   [dataSource]="dataSource"
   [keyExpr]="keyExpr"
   [showBorders]="showBorders"
@@ -6,7 +7,7 @@
   [rowAlternationEnabled]="rowAlternationEnabled"
   [allowColumnReordering]="allowColumnReordering"
   [allowColumnResizing]="allowColumnResizing"
-  [remoteOperations]="true"
+  [remoteOperations]="remoteOperations"
   (onRowClick)="onRowClick($event)"
   (onSelectionChanged)="onSelectionChanged($event)">
 
@@ -23,6 +24,7 @@
 
   <!-- Column Fixing — เปิดไว้เสมอเผื่อใช้ -->
   <dxo-column-fixing [enabled]="true"></dxo-column-fixing>
+  
 
   <!--
     วน loop สร้าง column จาก array ที่หน้าบ้านส่งมา
@@ -33,6 +35,7 @@
     <dxi-column
       [dataField]="col.dataField"
       [caption]="col.caption ?? col.dataField"
+      [allowSorting]="col.allowSorting !== false"
       [dataType]="col.dataType ?? 'string'"
       [alignment]="col.alignment ?? 'left'"
       [width]="col.width ?? undefined"
@@ -51,6 +54,7 @@
   @if (actionButtons.length > 0) {
     <dxi-column
       [caption]="actionColumnCaption"
+      [allowSorting]="false"
       [width]="actionColumnWidth"
       alignment="center"
       [fixed]="true"

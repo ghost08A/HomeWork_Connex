@@ -71,22 +71,21 @@
     </div>
   </div>
   <!-- Table Section -->
-  @if(!loadingService.isLoading()) {
-    <custom-data-grid
-      [dataSource]="filteredProducts"
-      keyExpr="productId"
-      [columns]="columns"
-      [actionButtons]="actionButtons"
-      actionColumnCaption="จัดการ"
-      [actionColumnWidth]="200"
-      [hasDetailRow]="true"
-      [masterDetailTemplate]="productDetailTemplate"
-      [showSearchPanel]="false"
-      [pageSize]="10"
-      (rowClick)="onRowClick($event)"
-    >
-    </custom-data-grid>
-  }
+  <custom-data-grid
+    #dataGrid
+    [dataSource]="gridDataSource"
+    keyExpr="productId"
+    [columns]="columns"
+    [actionButtons]="actionButtons"
+    actionColumnCaption="จัดการ"
+    [actionColumnWidth]="200"
+    [hasDetailRow]="true"
+    [masterDetailTemplate]="productDetailTemplate"
+    [showSearchPanel]="false"
+    [pageSize]="10"
+    [remoteOperations]="true"
+  >
+  </custom-data-grid>
 </div>
 
 <!-- Template สถานะ -->

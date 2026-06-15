@@ -11,10 +11,6 @@ namespace HomeWork.Domain.RequestModels.ProductRequestModel
         public bool FilterActive { get; set; }
         public bool FilterInactive { get; set; }
         public List<int>? CategoryIds { get; set; }
-
-        // kept for backward compat with RawSqlService (not used in new EF Core path)
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
     }
 
     public class CreateProductRequestModel

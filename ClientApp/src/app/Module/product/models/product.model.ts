@@ -1,4 +1,6 @@
 
+import { LoadOptions } from 'devextreme/data';
+import { DevExtremeLoadOptions } from '../../Shared/models/devExtreme.model';
 // ======================================
 // ProductList — ใช้แสดงข้อมูลในตาราง
 // ======================================
@@ -12,8 +14,8 @@ export interface ProductList {
     statusProductCode: string;
     categoryId: number[];
     categoryNames: string[];     // array ของชื่อประเภท แปลงจาก categoryId[]
-    createdAt?: string | Date;   // ตรงกับ Backend (createdAt)
-    updatedAt?: string | Date;   // ตรงกับ Backend (updatedAt)
+    createdAt?: string | Date;
+    updatedAt?: string | Date;
 }
 
 // ======================================
@@ -28,24 +30,25 @@ export class ProductForm {
     imagePath: string = '';
     statusProductCode: string = 'ACTIVE';
     categoryId: number[] = [];
-    updatedAt?: string | Date|null = null;
+    updatedAt?: string | Date | null = null;
 }
 
 // ======================================
 // Request/Response Model สำหรับ API
 // ======================================
 
-// Model ขาไป (Request)
+
+
+// Model ขาไป (Request) — รวม LoadOptions ของ DevExtreme + filter ของเราเอง
+
 export interface ProductSearchRequestModel {
+    loadOptions: DevExtremeLoadOptions;
     keyword: string | null;
     filterActive: boolean;
     filterInactive: boolean;
     categoryIds: number[] | null;
-    pageNumber: number;
-    pageSize: number;
 }
 
-// Model ขากลับ (ตัวสินค้า 1 แถว)
 export interface ProductSearchResponseModel {
     productId: number;
     productName: string;
@@ -59,11 +62,9 @@ export interface ProductSearchResponseModel {
     updatedAt?: string | Date;
 }
 
-// Wrapper หน้าข้อมูล
-export interface PageResultResponseModel<T> {
-    item: T[];
+// Wrapper ที่ Backend ส่งกลับมา (DevExtreme.AspNet.Data LoadResult format)
+export interface ProductSearchResult {
+    data: ProductSearchResponseModel[];
     totalCount: number;
-    pageNumber: number;
-    pageSize: number;
-    totalPages?: number;
 }
+

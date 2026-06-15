@@ -170,11 +170,9 @@ namespace HomeWork.Service.ImplementServices.ProductService
             ValidateProduct(request, error);
             if (product==null) error.AddError("ไม่พบข้อมูลสินค้า");
 
+            
             if (request.updateAt.HasValue && request.updateAt < product.UpdatedAt)
                 error.AddError("เวอร์ชั่นไม่ตรงกันกรุณาลองใหม่อีกครั้ง");
-
-
-            
 
             await ValidateDatabaseMasterDataAsync(request.CategoryId, request.StatusProductCode, error);
             error.ThrowIfError();

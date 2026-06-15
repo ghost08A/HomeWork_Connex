@@ -18,6 +18,8 @@ export interface ColumnConfig {
   caption?: string;
   // หัวข้อ column ที่แสดงให้ user เห็น
 
+  allowSorting?: boolean; 
+
   dataType?: 'string' | 'number' | 'boolean' | 'date' | 'datetime';
   // type ของข้อมูล — ส่งผลต่อการ sort, filter, format
 

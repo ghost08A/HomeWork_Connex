@@ -1,8 +1,9 @@
-import { Component, Input, Output, EventEmitter, TemplateRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DxDataGridModule, DxTemplateModule } from 'devextreme-angular';
+import { DxDataGridComponent, DxDataGridModule, DxTemplateModule } from 'devextreme-angular';
 import { CustomButtonComponent } from '../custom-button/custom-button.component';
 import { ActionButton, ColumnConfig } from '../../models/typecustom.model';
+import DataSource from 'devextreme/data/data_source';
 
 @Component({
   selector: 'custom-data-grid',
@@ -11,11 +12,13 @@ import { ActionButton, ColumnConfig } from '../../models/typecustom.model';
   styleUrl: './custom-data-grid.component.scss',
 })
 export class CustomDataGridComponent {
+  @ViewChild('dataGrid') dataGrid?: DxDataGridComponent;
+
   // --------------------------------------------------
   // INPUTS
   // --------------------------------------------------
 
-  @Input() dataSource: any[] = [];
+  @Input() dataSource: any[] | DataSource = [];
   // ข้อมูลที่จะแสดงในตาราง
 
   @Input() keyExpr: string = 'id';
@@ -33,6 +36,8 @@ export class CustomDataGridComponent {
 
   @Input() actionColumnWidth: number = 150;
   // ความกว้างของ column จัดการ
+
+  
 
   @Input() showBorders: boolean = true;
   // แสดงเส้นขอบตาราง
@@ -57,6 +62,10 @@ export class CustomDataGridComponent {
 
   @Input() pageSize: number = 10;
   // จำนวนแถวต่อหน้า
+
+  // true = ส่ง skip/take/sort/filter ไป backend (Server-Side)
+  // false = จัดการทุกอย่างใน client (ใช้เมื่อ dataSource เป็น Array)
+  @Input() remoteOperations: boolean = false;
 
   @Input() hasDetailRow: boolean = false;
   // true = เปิดใช้ master-detail (มีปุ่ม expand ▶ ที่แถว)
@@ -105,5 +114,25 @@ export class CustomDataGridComponent {
   getTemplateRef(dataField: string): TemplateRef<any> | null {
     const col = this.columns.find(c => c.dataField === dataField);
     return (col && col.cellTemplate instanceof TemplateRef) ? col.cellTemplate : null;
+  }
+
+  setDataSource(dataSource: any[] | DataSource): void {
+    this.dataSource = dataSource;
+    this.dataGrid?.instance.option('dataSource', dataSource);
+    this.refresh();
+  }
+
+  refresh(): void {
+    this.dataGrid?.instance.refresh();
+    this.repaint();
+  }
+
+  reload(): void {
+    this.dataGrid?.instance.getDataSource()?.reload();
+    this.repaint();
+  }
+
+  repaint(): void {
+    this.dataGrid?.instance.repaint();
   }
 }

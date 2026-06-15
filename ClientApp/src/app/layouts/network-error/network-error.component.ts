@@ -11,7 +11,6 @@ export class NetworkErrorComponent {
   constructor(private router: Router) {}
 
   public goHome(): void {
-    // พากลับไปที่หน้าแรกสุด (ซึ่งระบบจะเช็คเองว่ามีสิทธิ์เข้าหน้าไหน)
     this.router.navigate(['/home']);
   }
 }

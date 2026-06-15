@@ -12,8 +12,5 @@ namespace HomeWork.Domain.Interfaces.Services.RawSqlServices
     public interface IRawSqlService
     {
         Task<List<NavbarResponseModel>> GetNavbarByRolesAsync(List<string> userRoles);
-
-        Task<PageResultResponseModel<ProductSearchResponseModel>> SearchProductsAsync(ProductSearchRequestModel request);
-
     }
 }

@@ -1,0 +1,21 @@
+.order-dashboard {
+  min-height: 100vh;
+  padding: 24px 32px;
+}
+
+.dashboard-header{
+    margin-bottom: 24px;
+
+    .header-title{
+        font-size: 30px;
+        font-weight: 700;
+        color: #1F2937;
+        letter-spacing: -0.5px;
+    }
+
+    .header-divider{
+        margin-top: 16px;
+        border: none;
+        border-top: 1px solid #D1D5DB; 
+    }
+}
