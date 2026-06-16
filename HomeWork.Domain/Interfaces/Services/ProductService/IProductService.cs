@@ -11,6 +11,7 @@ namespace HomeWork.Domain.Interfaces.Services.ProductService
 {
     public interface IProductService
     {
+        Task<List<ValueOptionResponseModel<int>>> GetProducts();
         Task<List<ValueOptionResponseModel<int>>> GetGategories();
 
         Task<List<ValueOptionResponseModel<string>>> GetStatus();

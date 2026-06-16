@@ -56,27 +56,17 @@
         </label>
         <div class="flex-grow">
           <custom-tag-box
-            placeholder="( Multi Select Box )"
-            [dataSource]="categoryOptions"
-            [(fieldValue)]="selectedCategories"
-          >
-          </custom-tag-box>
+            placeholder="เลือกสินค้า (สามารถเลือกได้หลายค่า)"
+            [dataSource]="productOptions"
+            [(fieldValue)]="selectedProducts"
+            [showSelectionControls]="true"
+            [applyValueMode]="'useButtons'"
+            [searchEnabled]="true"
+          />
         </div>
       </div>
 
-      <div class="flex items-center gap-4">
-        <label class="w-24 text-right text-sm font-medium text-gray-700 flex-shrink-0">
-          Category
-        </label>
-        <div class="flex-grow">
-          <custom-tag-box
-            placeholder="( Multi Select Box )"
-            [dataSource]="categoryOptions"
-            [(fieldValue)]="selectedCategories"
-          >
-          </custom-tag-box>
-        </div>
-      </div>
+      
 
       <div class="flex items-center gap-4">
       <label class="w-24 text-right text-sm font-medium text-gray-700 flex-shrink-0">
@@ -100,10 +90,44 @@
         </div>
       </div>
     </div>
-      <hr class="divider" />
     </div>
+         
+
+  </div>
+   <hr class="divider mb-2" />
+   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+    
+    <div class="flex flex-wrap items-center gap-4 px-4 py-2   text-sm text-gray-700">
+      
+      <div class="flex items-center gap-1.5">
+        <i class="dx-icon-checkmarkcircle text-green-600 text-lg"></i> 
+        <span>สถานะ Submit</span>
+      </div>
+      
+      <div class="flex items-center gap-1.5">
+        <i class="dx-icon-edit text-blue-600 text-lg"></i> 
+        <span>แก้ไข</span>
+      </div>
+      
+      <div class="flex items-center gap-1.5">
+        <i class="dx-icon-trash text-red-500 text-lg"></i> 
+        <span>ลบรายการ</span>
+      </div>
+    </div>
+
+    <div>
+      <custom-button
+        text="เพิ่มออเดอร์"
+        icon="plus"
+        type="success"
+        stylingMode="contained"
+        (onClick)="onAddNewOrder()">
+      </custom-button>
+    </div>
+    
   </div>
   <custom-data-grid 
+  #dataGrid
   [dataSource]="gridDataSource" 
   keyExpr="orderId" 
   [columns]="masterColumns"
@@ -111,8 +135,52 @@
   actionColumnCaption="จัดการ"
   [actionColumnWidth]="200"
   [pageSize]="10"
-    [remoteOperations]="true"
+  [remoteOperations]="true"
+
+  [hasDetailRow]="true" 
+  [masterDetailTemplate]="orderDetailTemplate"
   />
 
 
 </div>
+
+
+<ng-template #orderDetailTemplate let-data>
+  
+  <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-inner">
+    
+    <div class="mb-3">
+      <h3 class="text-sm font-bold text-gray-700">
+        รายการสินค้าที่เบิก (รหัสบิล: {{ data.orderId }})
+      </h3>
+    </div>
+
+    <custom-data-grid
+      [dataSource]="data.products" 
+      keyExpr="productId"
+      [columns]="detailColumns"
+      
+      [showSearchPanel]="false"
+      [showPager]="false"
+      [remoteOperations]="false" 
+    >
+    </custom-data-grid>
+
+  </div>
+
+</ng-template>
+
+
+
+ <ng-template #statusTemplate let-status>
+      <span
+        [class]="
+          status.data.status === 'Approved'
+            ? 'text-green-600 font-semibold'
+            : 'text-red-600 font-semibold'
+        "
+      >
+        {{ status.data.status }}
+      </span>
+  </ng-template>
+

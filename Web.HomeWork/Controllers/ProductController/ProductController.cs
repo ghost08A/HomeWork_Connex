@@ -3,6 +3,7 @@ using HomeWork.Domain.RequestModels.ProductRequestModel;
 using HomeWork.Domain.Share.Errors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Web.HomeWork.Controllers.ProductController
 {
@@ -18,6 +19,12 @@ namespace Web.HomeWork.Controllers.ProductController
         public ProductController(IProductService productService)
         {
             _productService = productService;
+        }
+        [HttpGet("Product")]
+        public async Task<IActionResult> GetProducts()
+        {
+            var products = await _productService.GetProducts();
+            return Ok(products);
         }
 
         [HttpGet("Categories")]
@@ -50,7 +57,7 @@ namespace Web.HomeWork.Controllers.ProductController
             await _productService.CreateProductAsync(request, error);
             return Ok();
         }
-
+        
         [HttpPut("UpdateProduct")]
         public async Task<IActionResult> UpdateProduct(UpdateProductRequestModel request)
         {

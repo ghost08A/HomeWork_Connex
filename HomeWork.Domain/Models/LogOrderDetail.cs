@@ -23,8 +23,6 @@ public partial class LogOrderDetail
 
     public string Remark { get; set; }
 
-    public decimal VatRate { get; set; }
-
     public decimal UnitPrice { get; set; }
 
     public int Quantity { get; set; }
@@ -36,4 +34,10 @@ public partial class LogOrderDetail
     public DateTime? UpdatedAt { get; set; }
 
     public int? UpdatedBy { get; set; }
+
+    public int ReturnedQuantity { get; set; }
+
+    public DateTime? ReturnedAt { get; set; }
+
+    public string ReturnRemark { get; set; }
 }

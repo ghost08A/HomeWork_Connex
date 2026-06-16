@@ -7,7 +7,7 @@ namespace HomeWork.Domain.Models;
 
 public partial class Order
 {
-    public int OrderId { get; set; }
+    public string OrderId { get; set; }
 
     public string StatusOrderCode { get; set; }
 

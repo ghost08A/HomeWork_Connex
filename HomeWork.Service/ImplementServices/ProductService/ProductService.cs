@@ -17,12 +17,10 @@ namespace HomeWork.Service.ImplementServices.ProductService
 
     public class ProductService: IProductService
     {
-        private readonly IRawSqlService _rawSqlService;
         private readonly connexContext _context;
         private readonly ITokenService _tokenService;
-        public ProductService(connexContext context,IRawSqlService rawSqlService,ITokenService tokenService)
+        public ProductService(connexContext context,ITokenService tokenService)
         {
-            _rawSqlService = rawSqlService;
             _context = context;
             _tokenService = tokenService;
         }
@@ -60,7 +58,9 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 ProductName = p.ProductName,
                 Price = p.Price,
                 Detail = p.Detail,
-                Quantity = p.Quantity,
+                Quantity = p.Quantity - p.OrderDetails
+                            .Where(od => od.Order.StatusOrderCode == "APPROVED" && od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode == "RETURN")
+                            .Sum(od => od.Quantity - od.ReturnedQuantity),
                 ImagePath = p.ImagePath,
                 StatusProductCode = p.StatusProductCode,
                 CreatedAt = p.CreatedAt,
@@ -71,6 +71,18 @@ namespace HomeWork.Service.ImplementServices.ProductService
             return await DevExtreme.AspNet.Data.DataSourceLoader.LoadAsync(selectQuery, request.LoadOptions);
         }
 
+        public async Task<List<ValueOptionResponseModel<int>>> GetProducts()
+        {
+            var product = await _context.Products
+               .AsNoTracking()
+               .Select(c => new ValueOptionResponseModel<int>
+               {
+                   Key = c.ProductId,
+                   Value = c.ProductName
+               })
+               .ToListAsync();
+            return product;
+        }
         public async Task<List<ValueOptionResponseModel<int>>> GetGategories()
         {
             var categories = await _context.Categories 
@@ -240,6 +252,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
             error.ThrowIfError();
 
             Product product;
+            var bookedQuantity = 0;
             bool isCreate = !request.ProductId.HasValue || request.ProductId == 0;
             if (isCreate)
             {
@@ -252,6 +265,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
             }
             else
             {
+               
                 product = await _context.Products
                     .Include(p => p.ProductCategories)
                     .FirstOrDefaultAsync(p => p.ProductId == request.ProductId);
@@ -259,6 +273,12 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 if (product == null) error.AddError("productId", "ไม่พบข้อมูลสินค้า");
                 if (request.updateAt.HasValue && request.updateAt < product.UpdatedAt)
                     error.AddError("เวอร์ชั่นไม่ตรงกันกรุณาลองใหม่อีกครั้ง");
+                bookedQuantity = await _context.OrderDetails
+                       .Where(od => od.ProductId == product.ProductId &&
+                         od.Order.StatusOrderCode == "APPROVED" &&
+                        (od.StatusOrderDetailCode == "APPROVED"))
+                       .SumAsync(od => od.Quantity - od.ReturnedQuantity);
+
             }
 
             error.ThrowIfError();
@@ -268,7 +288,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 product.ProductName = request.ProductName;
                 product.Price = request.Price; 
                 product.Detail = request.Detail;
-                product.Quantity = request.Quantity; 
+                product.Quantity = request.Quantity+bookedQuantity; 
                 product.ImagePath = request.ImagePath; 
                 product.StatusProductCode = request.StatusProductCode;
 

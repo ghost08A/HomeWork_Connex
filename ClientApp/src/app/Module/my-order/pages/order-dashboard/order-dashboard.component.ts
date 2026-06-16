@@ -1,4 +1,4 @@
-import { Component , inject, OnInit, ViewChild} from '@angular/core';
+import { Component , inject, OnInit, TemplateRef, ViewChild} from '@angular/core';
 import { CustomInputComponent } from '../../../Shared/components/custom-input/custom-input.component';
 import { CustomTagBoxComponent } from '../../../Shared/components/custom-tag-box/custom-tag-box.component';
 import { ActionButton, ColumnConfig, valueOption } from '../../../Shared/models/typecustom.model';
@@ -7,26 +7,16 @@ import { CustomCheckboxGroupComponent } from '../../../Shared/components/custom-
 import { CustomDataGridComponent } from '../../../Shared/components/custom-data-grid/custom-data-grid.component';
 import DataSource from 'devextreme/data/data_source';
 import { LoadingService } from '../../../Shared/services/loading.service';
-
+import { forkJoin } from 'rxjs';
+import { MyOrderService } from '../../service/my-order.service';
+import { OrderDetail, OrderProduct, OrderSearchRequestModel } from '../../models/order.model';
+import CustomStore from 'devextreme/data/custom_store';
+import { LoadOptions } from 'devextreme/data';
+import { lastValueFrom } from 'rxjs';
 // ======================================
-// Mock Data Models
+// Data Models
 // ======================================
-interface OrderProduct {
-  productId: number;
-  productName: string;
-  price: number;
-  quantity: number;
-}
 
-interface MockOrder {
-  orderId: number;
-  productName: string; // Concatenated product names
-  actionBy: string;
-  status: string; // For display in the grid column
-  statusOrder: string; // For button logic
-  orderDate: Date;
-  products: OrderProduct[]; // Detailed product list
-}
 @Component({
   selector: 'order-dashboard',
   imports: [
@@ -42,83 +32,29 @@ interface MockOrder {
 export class OrderDashboardComponent implements OnInit {
   public loadingService = inject(LoadingService);
 
+  constructor(private myOrderService: MyOrderService) {}
+  
   // ======================================
-  // ตัวเลือก Category & Status
+  // ตัวเลือก Product & Status
   // ======================================
-  public categoryOptions: valueOption[] = [];
-  public statusOptions: valueOption[] = [
-    { key: 'Draft', value: 'Draft' },
-    { key: 'Submit', value: 'Submit' },
-    { key: 'Pending', value: 'Pending' },
-    { key: 'Approved', value: 'Approved' },
-    { key: 'Rejected', value: 'Rejected' },
-    { key: 'WaitApprove', value: 'Wait Approve' },
-  ];
+  public productOptions: valueOption[] = [];
+  public statusOptions: valueOption[] = [];
   // ======================================
   // ตัวแปรค้นหา / Filter
   // ======================================
   public searchKeyword: string = '';
-  public selectedCategories: number[] = [];
+  public selectedProducts: string[] = [];
   public selectedStatus:  (string | number)[] = [];
   public startDate: Date | null = null;
   public endDate: Date | null = null;
 
   public gridDataSource!: DataSource;
 
-  private mockOrders: MockOrder[] = [
-    {
-      orderId: 1001,
-      products: [
-        { productId: 1, productName: 'โน๊ตบุ๊คสำหรับทำงาน', price: 25000, quantity: 1 },
-        { productId: 2, productName: 'เมาส์ไร้สาย', price: 790, quantity: 1 },
-      ],
-      actionBy: 'สมชาย ใจดี',
-      statusOrder: 'Draft',
-      status: 'Draft',
-      orderDate: new Date('2026-06-10T10:00:00Z'),
-      productName: 'โน๊ตบุ๊คสำหรับทำงาน, เมาส์ไร้สาย',
-    },
-    {
-      orderId: 1002,
-      products: [{ productId: 3, productName: 'จอคอมพิวเตอร์ 24 นิ้ว', price: 4500, quantity: 2 }],
-      actionBy: 'สมศรี มีสุข',
-      statusOrder: 'Approved',
-      status: 'Approved',
-      orderDate: new Date('2026-06-11T11:30:00Z'),
-      productName: 'จอคอมพิวเตอร์ 24 นิ้ว',
-    },
-    {
-      orderId: 1003,
-      products: [{ productId: 4, productName: 'คีย์บอร์ดเกมมิ่ง', price: 3200, quantity: 1 }],
-      actionBy: 'สมชาย ใจดี',
-      statusOrder: 'Rejected',
-      status: 'Rejected',
-      orderDate: new Date('2026-06-12T14:00:00Z'),
-      productName: 'คีย์บอร์ดเกมมิ่ง',
-    },
-    {
-      orderId: 1004,
-      products: [{ productId: 5, productName: 'หูฟังบลูทูธ', price: 1800, quantity: 1 }],
-      actionBy: 'มานะ อดทน',
-      statusOrder: 'WaitApprove',
-      status: 'WaitApprove',
-      orderDate: new Date('2026-06-13T09:00:00Z'),
-      productName: 'หูฟังบลูทูธ',
-    },
-    {
-      orderId: 1005,
-      products: [{ productId: 6, productName: 'ปริ้นเตอร์สี', price: 5500, quantity: 1 }],
-      actionBy: 'สมศรี มีสุข',
-      statusOrder: 'Submit',
-      status: 'Submit',
-      orderDate: new Date('2026-06-14T16:20:00Z'),
-      productName: 'ปริ้นเตอร์สี',
-    },
-  ];
-  
   @ViewChild('dataGrid') dataGrid?: CustomDataGridComponent;
+  @ViewChild('statusTemplate', { static: true }) statusTemplate!: TemplateRef<any>;
 
    public masterColumns: ColumnConfig[] = [];
+   public detailColumns: ColumnConfig[] = [];
 
    public actionButtons: ActionButton[] = [
     {
@@ -134,7 +70,7 @@ export class OrderDashboardComponent implements OnInit {
         icon: 'edit',
         type: 'default',
         stylingMode: 'text',
-        disabled: (rowData) => rowData.statusOrder === 'Approved' || rowData.statusOrder === 'Rejected' || rowData.statusOrder === 'WaitApprove',
+        disabled: (rowData) => rowData.statusOrder === 'APPROVED' || rowData.statusOrder === 'REJECTED' || rowData.statusOrder === 'WAITAPPROVE',
         onClick: (rowdata) => {}
       },
       {
@@ -142,7 +78,7 @@ export class OrderDashboardComponent implements OnInit {
         icon: 'trash',
         type: 'danger',
         stylingMode: 'text',
-        disabled: (rowData) => rowData.statusOrder === 'Approved' || rowData.statusOrder === 'Rejected' || rowData.statusOrder === 'WaitApprove',
+        disabled: (rowData) => rowData.statusOrder === 'APPROVED' || rowData.statusOrder === 'REJECTED' || rowData.statusOrder === 'WAITAPPROVE',
         onClick: (rowdata) => {}
       },
       
@@ -153,7 +89,7 @@ export class OrderDashboardComponent implements OnInit {
       {
         dataField: 'orderId',
         caption: 'รหัส',
-        dataType: 'number',
+        dataType: 'string',
         alignment: 'center',
         width: 80,
       },
@@ -172,37 +108,134 @@ export class OrderDashboardComponent implements OnInit {
         width: 150,
       },
       {
-        dataField: 'status',
+        dataField: 'statusOrder',
         caption: 'สถานะ',
         dataType: 'string',
         alignment: 'center',
-        width: 100,
+        width: 150,
       },
       {
         dataField: 'orderDate',
         caption: 'วันที่เบิก',
         dataType: 'date',
+        format: 'dd/MMM/yyyy',
         alignment: 'center',
         width: 120,
       }
     ];
+    this.detailColumns = [
+      {
+        dataField: 'productId',
+        caption: 'รหัสสินค้า',
+        dataType: 'number',
+        alignment: 'center',
+        width: 100,
+      },
+      {
+        dataField: 'productName',
+        caption: 'ชื่อสินค้า',
+        alignment: 'left',
+      },
+      {
+        dataField: 'price',
+        caption: 'ราคา',
+        dataType: 'number',
+        alignment: 'right',
+        width: 120,
+      },
+      {
+        dataField: 'quantity',
+        caption: 'จำนวนเบิก',
+        dataType: 'number',
+        alignment: 'center',
+        width: 100,
+      },
+      {
+        dataField: 'status',
+        caption: 'สถานะ',
+        dataType: 'string',
+        alignment: 'center',
+        cellTemplate: this.statusTemplate,
+        width: 100,
+      }
+    ];
 
+    this.loadInitialData();
+   }
+
+   private loadInitialData(): void {
+    forkJoin({
+        products: this.myOrderService.getProductOptions(),
+        statusOrders: this.myOrderService.getStatusOrder(),
+    }).subscribe({
+      next: (res) => {
+        this.productOptions = res.products || [];
+        this.statusOptions = res.statusOrders || [];
+        this.buildDataSource();
+      },
+      error: (err) => {
+        console.error('API Error:', err);
+      }
+    })
+   }
+
+   private buildDataSource(): void {
     this.gridDataSource = new DataSource({
-      store: this.mockOrders,
-      key: 'orderId',
+      store: new CustomStore({
+        key: 'orderId',
+        load: (loadOptions: LoadOptions) => {
+          const request: OrderSearchRequestModel = {
+            loadOptions:      loadOptions,
+            keyword:          this.searchKeyword || null,
+            statusOrders:     this.selectedStatus.length > 0
+                                ? this.selectedStatus.map(String)
+                                : null,
+            productIds:       this.selectedProducts.length > 0
+                                ? this.selectedProducts.map(Number)
+                                : null,
+            startDate:        this.startDate || null,
+            endDate:          this.endDate || null,
+          };
+
+          return lastValueFrom(this.myOrderService.searchOrders(request))
+            .then((res) => ({
+              data:       res.data.map((p) => this.mapToOrder(p)),
+              totalCount: res.totalCount,
+            }));
+        },
+      })
     });
 
     setTimeout(() => {
       this.dataGrid?.setDataSource(this.gridDataSource);
     });
    }
+   private mapToOrder(res: OrderDetail): any {
+    const productList = res.products || [];
+    const combinedProductNames = productList.map(p => p.productName).join(', ');
 
-  public onSearch(): void {}
+    return {
+      orderId: res.orderId,
+      productName: combinedProductNames,
+      actionBy: res.actionBy,
+      statusOrder: res.statusOrder,
+      orderDate: new Date(res.orderDate),
+      products: productList,
+    }
+   }
+
+  public onSearch(): void {
+    this.dataGrid?.reload();
+  }
+  
   public onClear(): void {
     this.searchKeyword = '';
-    this.selectedCategories = [];
     this.selectedStatus = [];
+    this.selectedProducts = [];
     this.startDate = null;
     this.endDate = null;
+    this.dataGrid?.reload();
   }
+
+  public onAddNewOrder(): void {}
 }

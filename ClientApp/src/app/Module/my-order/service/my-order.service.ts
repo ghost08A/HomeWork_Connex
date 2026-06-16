@@ -6,15 +6,28 @@ import { environment } from '../../../../environments/envaronment';
 import { ErrorEditorState } from '../../Shared/directives/validate-error.directive';
 import { catchErrorHandler } from '../../Shared/utils/swalHandler';
 import { valueOption } from '../../Shared/models/typecustom.model';
+import { OrderSearchRequestModel, OrderSearchResult } from '../models/order.model';
 
 @Injectable({
   providedIn: 'root'
 })
-export class ProductService {
+export class MyOrderService {
 
-    private apiUrl = environment.apiUrl + '/Product';
+    constructor(private http: HttpClient) { }
+    private apiUrl = environment.apiUrl;
+
+    public getProductOptions(): Observable<valueOption[]> {
+        return this.http.get<valueOption[]>(this.apiUrl + '/Product/Product').pipe(this.apiPipe());
+    }
 
     
+    public getStatusOrder(): Observable<valueOption[]> {
+        return this.http.get<valueOption[]>(this.apiUrl + '/Order/OrderStatus').pipe(this.apiPipe());
+    }
+    public searchOrders(request: OrderSearchRequestModel): Observable<OrderSearchResult> {
+            return this.http.post<OrderSearchResult>(this.apiUrl + '/Order/SearchOrder', request).pipe(this.apiPipe());
+    }
+
     // ตัวดักจับ Error
     private apiPipe<T>(validateHelper?: ErrorEditorState): MonoTypeOperatorFunction<T> {
         return (source$) => source$.pipe(catchError((err) => catchErrorHandler(err, validateHelper)));

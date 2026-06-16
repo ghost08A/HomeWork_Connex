@@ -41,6 +41,8 @@ public partial class connexContext : DbContext
 
     public virtual DbSet<Role> Roles { get; set; }
 
+    public virtual DbSet<RunningNumber> RunningNumbers { get; set; }
+
     public virtual DbSet<StatusOrder> StatusOrders { get; set; }
 
     public virtual DbSet<StatusOrderDetail> StatusOrderDetails { get; set; }
@@ -101,14 +103,13 @@ public partial class connexContext : DbContext
                 .HasMaxLength(10);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Remark).HasMaxLength(200);
+            entity.Property(e => e.ReturnedAt).HasColumnType("timestamp without time zone");
+            entity.Property(e => e.ReturnedQuantity).HasDefaultValue(0);
             entity.Property(e => e.StatusOrderDetailCode)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.VatRate)
-                .HasPrecision(5, 2)
-                .HasColumnName("vatRate");
         });
 
         modelBuilder.Entity<LogProduct>(entity =>
@@ -203,6 +204,9 @@ public partial class connexContext : DbContext
         {
             entity.ToTable("Order");
 
+            entity.Property(e => e.OrderId)
+                .HasMaxLength(20)
+                .HasDefaultValueSql("nextval('\"Order_OrderId_seq\"'::regclass)");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.StatusOrderCode)
                 .IsRequired()
@@ -220,15 +224,17 @@ public partial class connexContext : DbContext
             entity.ToTable("OrderDetail");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.OrderId)
+                .IsRequired()
+                .HasMaxLength(20);
             entity.Property(e => e.Remark).HasMaxLength(200);
+            entity.Property(e => e.ReturnedAt).HasColumnType("timestamp without time zone");
+            entity.Property(e => e.ReturnedQuantity).HasDefaultValue(0);
             entity.Property(e => e.StatusOrderDetailCode)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.VatRate)
-                .HasPrecision(5, 2)
-                .HasColumnName("vatRate");
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.OrderId)
@@ -308,6 +314,15 @@ public partial class connexContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        modelBuilder.Entity<RunningNumber>(entity =>
+        {
+            entity.HasKey(e => e.Year).HasName("RunningNumber_pkey");
+
+            entity.ToTable("RunningNumber");
+
+            entity.Property(e => e.Year).ValueGeneratedNever();
         });
 
         modelBuilder.Entity<StatusOrder>(entity =>

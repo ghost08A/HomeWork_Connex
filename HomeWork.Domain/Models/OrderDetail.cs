@@ -9,7 +9,7 @@ public partial class OrderDetail
 {
     public int OrderDetailId { get; set; }
 
-    public int OrderId { get; set; }
+    public string OrderId { get; set; }
 
     public int ProductId { get; set; }
 
@@ -18,8 +18,6 @@ public partial class OrderDetail
     public string StatusOrderDetailCode { get; set; }
 
     public string Remark { get; set; }
-
-    public decimal VatRate { get; set; }
 
     public decimal UnitPrice { get; set; }
 
@@ -32,6 +30,12 @@ public partial class OrderDetail
     public DateTime? UpdatedAt { get; set; }
 
     public int? UpdatedBy { get; set; }
+
+    public int ReturnedQuantity { get; set; }
+
+    public DateTime? ReturnedAt { get; set; }
+
+    public string ReturnRemark { get; set; }
 
     public virtual Order Order { get; set; }
 

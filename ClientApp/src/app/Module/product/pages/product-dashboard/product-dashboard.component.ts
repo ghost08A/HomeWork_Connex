@@ -73,9 +73,6 @@ export class ProductDashboardComponent implements OnInit {
   public isPopupVisible: boolean = false;
   public popupMode: 'ADD' | 'EDIT' = 'ADD';
   public productForm: ProductForm = new ProductForm();
-  // ใช้เฉพาะ ng-template ยืนยันลบ (commented out แต่ template ยังอ้างอิงอยู่)
-  public productToDelete: ProductList | null = null;
-
   // ======================================
   // Column & Action
   // ======================================
@@ -287,8 +284,10 @@ export class ProductDashboardComponent implements OnInit {
       next: () => {
         const msg = this.popupMode === 'ADD' ? 'เพิ่มสินค้าสำเร็จ' : 'แก้ไขสินค้าสำเร็จ';
         notify({ message: msg, type: 'success', displayTime: 2500 });
-        this.isPopupVisible = false;
-        this.dataGrid?.reload();
+        setTimeout(() => {
+          this.isPopupVisible = false;
+          this.dataGrid?.reload();
+        });
       },
       error: (err) => {
         console.error('Upsert Error:', err);
