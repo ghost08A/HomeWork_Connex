@@ -6,7 +6,7 @@ import { environment } from '../../../../environments/envaronment';
 import { ErrorEditorState } from '../../Shared/directives/validate-error.directive';
 import { catchErrorHandler } from '../../Shared/utils/swalHandler';
 import { valueOption } from '../../Shared/models/typecustom.model';
-import { OrderSearchRequestModel, OrderSearchResult } from '../models/order.model';
+import { OrderSearchRequestModel, OrderSearchResult, ProductDetail } from '../models/order.model';
 
 @Injectable({
   providedIn: 'root'
@@ -24,6 +24,11 @@ export class MyOrderService {
     public getStatusOrder(): Observable<valueOption[]> {
         return this.http.get<valueOption[]>(this.apiUrl + '/Order/OrderStatus').pipe(this.apiPipe());
     }
+
+    public getProductById(productId: number): Observable<ProductDetail>{
+        return this.http.get<ProductDetail>(`${this.apiUrl}/Product/${productId}`).pipe(this.apiPipe());
+    }
+
     public searchOrders(request: OrderSearchRequestModel): Observable<OrderSearchResult> {
             return this.http.post<OrderSearchResult>(this.apiUrl + '/Order/SearchOrder', request).pipe(this.apiPipe());
     }

@@ -1,0 +1,20 @@
+.category-tag-container{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+ .category-badge{
+    display: inline-flex; //ทำให้ขนาดของ badge ปรับตามเนื้อหา
+    align-items: center;
+    padding: 4px 8px;
+    background-color: #eff6ff; //สีฟ้าอ่อน
+    border: 1px solid #bfdbfe; //เส้นขอบสีฟ้าอ่อน 
+    border-radius: 6px;
+
+    color: #1d4ed8; //สีฟ้าเข้มสำหรับข้อความ
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px; //ปรับให้ข้อความอยู่กึ่งกลางแนวตั้ง
+    
+}

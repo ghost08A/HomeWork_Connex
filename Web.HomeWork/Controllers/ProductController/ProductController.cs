@@ -41,6 +41,13 @@ namespace Web.HomeWork.Controllers.ProductController
             return Ok(statuses);
         }
 
+        [HttpGet("{productId}")]
+        public async Task<IActionResult> GetProductDetail(int productId)
+        {
+            var error = new CustomError();
+            var product = await _productService.GetProductDetailById(productId, error);
+            return Ok(product);
+        }
         [HttpPost("ProductSearch")]
         public async Task<IActionResult> ProductSearch(ProductSearchRequestModel request)
         {

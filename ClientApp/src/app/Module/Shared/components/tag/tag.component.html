@@ -1,0 +1,17 @@
+<div class="category-tag-container">
+  
+  @if (categories && categories.length > 0) {
+    
+    @for (categoryName of categories; track $index) {
+      <span class="category-badge">
+        {{ categoryName }}
+      </span>
+    }
+    
+  } @else {
+    
+    <span class="empty-text">-</span>
+    
+  }
+  
+</div>

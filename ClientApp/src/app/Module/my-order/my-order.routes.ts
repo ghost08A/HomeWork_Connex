@@ -16,7 +16,7 @@ export const MY_ORDER_ROUTES: Routes = [
         path: MyOrderRoute.orderDetail,
         component: OrderDetailComponent,
         canActivate: [permissionGuard],
-        data: {pageCode : MyOrderRoute.orderDetail}
+        data: {pageCode : MyOrderRoute.orderDashboard}
     },
     {
         path: '',

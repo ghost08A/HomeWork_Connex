@@ -1,4 +1,4 @@
-import { Component , inject, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import { Component, inject, OnInit, AfterViewInit, TemplateRef, ViewChild} from '@angular/core';
 import { CustomInputComponent } from '../../../Shared/components/custom-input/custom-input.component';
 import { CustomTagBoxComponent } from '../../../Shared/components/custom-tag-box/custom-tag-box.component';
 import { ActionButton, ColumnConfig, valueOption } from '../../../Shared/models/typecustom.model';
@@ -7,12 +7,12 @@ import { CustomCheckboxGroupComponent } from '../../../Shared/components/custom-
 import { CustomDataGridComponent } from '../../../Shared/components/custom-data-grid/custom-data-grid.component';
 import DataSource from 'devextreme/data/data_source';
 import { LoadingService } from '../../../Shared/services/loading.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, lastValueFrom } from 'rxjs';
 import { MyOrderService } from '../../service/my-order.service';
-import { OrderDetail, OrderProduct, OrderSearchRequestModel } from '../../models/order.model';
+import { OrderDetail, OrderSearchRequestModel } from '../../models/order.model';
 import CustomStore from 'devextreme/data/custom_store';
 import { LoadOptions } from 'devextreme/data';
-import { lastValueFrom } from 'rxjs';
+import { Router } from '@angular/router';
 // ======================================
 // Data Models
 // ======================================
@@ -29,10 +29,10 @@ import { lastValueFrom } from 'rxjs';
   templateUrl: './order-dashboard.component.html',
   styleUrl: './order-dashboard.component.scss',
 })
-export class OrderDashboardComponent implements OnInit {
+export class OrderDashboardComponent implements OnInit, AfterViewInit {
   public loadingService = inject(LoadingService);
 
-  constructor(private myOrderService: MyOrderService) {}
+  constructor(private router:Router,private myOrderService: MyOrderService) {}
   
   // ======================================
   // ตัวเลือก Product & Status
@@ -71,7 +71,13 @@ export class OrderDashboardComponent implements OnInit {
         type: 'default',
         stylingMode: 'text',
         disabled: (rowData) => rowData.statusOrder === 'APPROVED' || rowData.statusOrder === 'REJECTED' || rowData.statusOrder === 'WAITAPPROVE',
-        onClick: (rowdata) => {}
+        onClick: (rowdata) => {
+          this.router.navigate(['/my-order/order-detail'],{
+            queryParams: {
+              orderId: rowdata.orderId
+            }
+          });
+        }
       },
       {
         text: '',
@@ -98,7 +104,6 @@ export class OrderDashboardComponent implements OnInit {
         caption: 'ชื่อสินค้า',
         dataType: 'string',
         alignment: 'left',
-        // width: 200,
       },
       {
         dataField: 'actionBy',
@@ -159,7 +164,9 @@ export class OrderDashboardComponent implements OnInit {
         width: 100,
       }
     ];
+   }
 
+   ngAfterViewInit(): void {
     this.loadInitialData();
    }
 
@@ -169,6 +176,7 @@ export class OrderDashboardComponent implements OnInit {
         statusOrders: this.myOrderService.getStatusOrder(),
     }).subscribe({
       next: (res) => {
+        console.log('Status Orders API response:', res.statusOrders);
         this.productOptions = res.products || [];
         this.statusOptions = res.statusOrders || [];
         this.buildDataSource();
@@ -206,9 +214,8 @@ export class OrderDashboardComponent implements OnInit {
       })
     });
 
-    setTimeout(() => {
-      this.dataGrid?.setDataSource(this.gridDataSource);
-    });
+    // ViewChild พร้อมแน่นอน (เรียกจาก ngAfterViewInit) ไม่ต้องใช้ setTimeout
+    this.dataGrid?.setDataSource(this.gridDataSource);
    }
    private mapToOrder(res: OrderDetail): any {
     const productList = res.products || [];
@@ -237,5 +244,7 @@ export class OrderDashboardComponent implements OnInit {
     this.dataGrid?.reload();
   }
 
-  public onAddNewOrder(): void {}
+  public onAddNewOrder(): void {
+    this.router.navigate(['/my-order/order-detail']);
+  }
 }

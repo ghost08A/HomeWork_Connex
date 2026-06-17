@@ -27,6 +27,7 @@ import notify from 'devextreme/ui/notify';
 import CustomStore from 'devextreme/data/custom_store';
 import DataSource from 'devextreme/data/data_source';
 import { LoadOptions } from 'devextreme/data';
+import { TagComponent } from '../../../Shared/components/tag/tag.component';
 
 @Component({
   selector: 'product-dashboard',
@@ -40,6 +41,7 @@ import { LoadOptions } from 'devextreme/data';
     CustomButtonComponent,
     CustomPopupComponent,
     CustomSelectBoxComponent,
+    TagComponent,
   ],
   templateUrl: './product-dashboard.component.html',
   styleUrl: './product-dashboard.component.scss',
@@ -79,7 +81,9 @@ export class ProductDashboardComponent implements OnInit {
   @ViewChild('statusTemplate', { static: true }) statusTemplate!: TemplateRef<unknown>;
   @ViewChild('categoryNamesTemplate', { static: true }) categoryNamesTemplate!: TemplateRef<unknown>;
   @ViewChild('dataGrid') dataGrid?: CustomDataGridComponent;
-  public columns: ColumnConfig[] = [];
+  public columns: ColumnConfig[] = [
+    
+  ];
 
   public actionButtons: ActionButton[] = [
     {
@@ -95,8 +99,7 @@ export class ProductDashboardComponent implements OnInit {
   // Lifecycle Hooks
   // ======================================
   ngOnInit(): void {
-    this.columns = [
-      {
+     this.columns = [{
         dataField: 'productId',
         caption: 'รหัส',
         dataType: 'number',
@@ -121,8 +124,7 @@ export class ProductDashboardComponent implements OnInit {
         alignment: 'center',
         width: 120,
         cellTemplate: this.statusTemplate,
-      },
-    ];
+      },]
 
     this.loadInitialData();
   }

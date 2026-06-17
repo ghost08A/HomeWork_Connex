@@ -10,6 +10,7 @@ using HomeWork.Domain.ResponseModels.ValueOptionResponseModel;
 using HomeWork.Domain.Share.Errors;
 using HomeWork.Service.Helper;
 using Microsoft.EntityFrameworkCore;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 namespace HomeWork.Service.ImplementServices.ProductService
@@ -59,7 +60,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 Price = p.Price,
                 Detail = p.Detail,
                 Quantity = p.Quantity - p.OrderDetails
-                            .Where(od => od.Order.StatusOrderCode == "APPROVED" && od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode == "RETURN")
+                            .Where(od => od.Order.StatusOrderCode == "APPROVED" && od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode == "RETURNED")
                             .Sum(od => od.Quantity - od.ReturnedQuantity),
                 ImagePath = p.ImagePath,
                 StatusProductCode = p.StatusProductCode,
@@ -75,6 +76,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
         {
             var product = await _context.Products
                .AsNoTracking()
+               //.Where(p => p.StatusProductCode != "INACTIVE")
                .Select(c => new ValueOptionResponseModel<int>
                {
                    Key = c.ProductId,
@@ -108,6 +110,35 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 .ToListAsync();
             return statuses;
         }
+
+        public async Task<ProductDetailResponseModel> GetProductDetailById(int productId, CustomError error)
+        {
+            var product = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.ProductId == productId)
+                .Select(p => new ProductDetailResponseModel {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    Description = p.Detail,
+                    ImagePath = p.ImagePath,
+                    Price = p.Price,
+                    Quantity = p.Quantity - p.OrderDetails
+                      .Where(od => od.Order.StatusOrderCode == "APPROVED" &&
+                            (od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode =="RETURNED"))
+                      .Sum(od => od.Quantity - od.ReturnedQuantity),
+                    CategoryNames =p.ProductCategories
+                        .Select(pc=> pc.Category.CategoryName).ToList()
+                })
+                .FirstOrDefaultAsync();
+            if (product == null)
+            {
+                error.AddError("ไม่พบข้อมูลสินค้ารหัสนี้");
+                error.ThrowIfError();
+            }
+
+            return product;
+        }
+
 
         public async Task<string> CreateProductAsync(CreateProductRequestModel request, CustomError error)
         {
@@ -186,7 +217,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
             if (request.updateAt.HasValue && request.updateAt < product.UpdatedAt)
                 error.AddError("เวอร์ชั่นไม่ตรงกันกรุณาลองใหม่อีกครั้ง");
 
-            await ValidateDatabaseMasterDataAsync(request.CategoryId, request.StatusProductCode, error);
+            await ValidateDatabaseMasterDataAsync(request.ProductName,request.CategoryId, request.StatusProductCode, error);
             error.ThrowIfError();
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -248,7 +279,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
             var timeNow = DateTime.UtcNow;
             ValidateProduct(request, error);
 
-            await ValidateDatabaseMasterDataAsync(request.CategoryId, request.StatusProductCode, error);
+            await ValidateDatabaseMasterDataAsync(request.ProductName,request.CategoryId, request.StatusProductCode, error);
             error.ThrowIfError();
 
             Product product;
@@ -287,7 +318,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
             {
                 product.ProductName = request.ProductName;
                 product.Price = request.Price; 
-                product.Detail = request.Detail;
+                product.Detail = request.Detail; 
                 product.Quantity = request.Quantity+bookedQuantity; 
                 product.ImagePath = request.ImagePath; 
                 product.StatusProductCode = request.StatusProductCode;
@@ -332,13 +363,20 @@ namespace HomeWork.Service.ImplementServices.ProductService
             }
         }
 
-        private async Task ValidateDatabaseMasterDataAsync(List<int> categoryIds, string statusProductCode, CustomError error)
+        private async Task ValidateDatabaseMasterDataAsync(string productName,List<int> categoryIds, string statusProductCode, CustomError error)
         {
             // 1. เช็คสถานะสินค้า (Status)
             // AnyAsync จะคืนค่า true ถ้าเจอข้อมูลอย่างน้อย 1 ตัว
             bool isStatusExist = await _context.StatusProducts
                 .AnyAsync(s => s.StatusProductCode == statusProductCode);
 
+
+            bool isProductNameExist = await _context.Products
+                .AnyAsync(p => p.ProductName == productName);
+
+            if (isProductNameExist)
+                error.AddError("productName", "มีชื่อสินค้านี้แล้วลองใหม่อีกครั้ง");
+                
             if (!isStatusExist)
             {
                 error.AddError("statusProductCode", "ระบุสถานะสินค้าไม่ถูกต้อง หรือสถานะนี้ไม่มีอยู่ในระบบ");
@@ -346,7 +384,6 @@ namespace HomeWork.Service.ImplementServices.ProductService
 
             if (categoryIds != null && categoryIds.Any())
             {
-                //กำจัดเลขซ้ำเผื่อหน้าบ้านส่ง [1, 1, 2] มา
                 var uniqueCategoryIds = categoryIds.Distinct().ToList();
 
                 // ท่าไม้ตาย: นับจำนวนหมวดหมู่ใน DB ที่ตรงกับรหัสที่ส่งมา
@@ -372,10 +409,10 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 error.AddError("productName", "ห้ามใส่Emoji");
             // ดักราคา
             if (request.Price <= 0)
-                error.AddError("ราคาสินค้าต้องไม่ติดลบ");
+                error.AddError("price", "ราคาสินค้าต้องไม่ติดลบ");
 
             // ดักจำนวน
-            if (request.Quantity <= 0)
+            if (request.Quantity < 0)
                 error.AddError("quantity","จำนวนสินค้าต้องไม่ติดลบ");
 
             if (request.CategoryId == null || !request.CategoryId.Any())

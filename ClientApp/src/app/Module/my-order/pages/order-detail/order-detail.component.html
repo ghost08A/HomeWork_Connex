@@ -1,1 +1,214 @@
-<p>order-detail works!</p>
+<div class="order-Lists">
+  <div class="order-Lists-header">
+    <h1 class="header-title">{{ isEditMode ? 'Edit Order' : 'New Order' }}</h1>
+    <hr class="divider" />
+  </div>
+
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+    <div class="flex flex-wrap items-center gap-4 px-4 py-2 text-sm text-gray-700">
+      <div class="flex items-center gap-1.5">
+        <i class="dx-icon-edit text-blue-600 text-lg"></i>
+        <span>แก้ไข</span>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <i class="dx-icon-return text-lg"></i>
+        <span>คืนสินค้า</span>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <i class="dx-icon-trash text-red-500 text-lg"></i>
+        <span>ลบรายการ</span>
+      </div>
+    </div>
+
+    <div>
+      <custom-button
+        text="เพิ่มรายการสินค้า"
+        icon="plus"
+        type="success"
+        stylingMode="contained"
+        (onClick)="onAddNewProductOrder()"
+      />
+    </div>
+  </div>
+  <custom-data-grid
+    #dataGrid
+    [dataSource]="orderDetails"
+    keyExpr="productId"
+    [columns]="columns"
+    [actionButtons]="actionButtons"
+    actionColumnCaption="จัดการ"
+    [actionColumnWidth]="200"
+    [hasDetailRow]="true"
+    [masterDetailTemplate]="returnDetailTemplate"
+    [showSearchPanel]="false"
+    [pageSize]="10"
+    [remoteOperations]="true"
+  />
+  <div class="flex flex-col md:flex-row gap-4 justify-end items-center mt-2">
+    <custom-button text="SAVE DRAFT" icon="save" type="default" stylingMode="contained" />
+
+    <custom-button text="SAVE" icon="check" type="success" stylingMode="contained"> </custom-button>
+
+    <custom-button text="CANCEL" icon="close" type="normal" stylingMode="contained">
+    </custom-button>
+  </div>
+</div>
+
+<ng-template #categoryNamesTemplate let-cell>
+  <tag [categories]="cell.data.categoryNames"></tag>
+</ng-template>
+
+<ng-template #returnDetailTemplate let-data>
+  @if (data.ReturnedQuantity > 0) {
+    <div class="bg-red-50 border border-red-200 shadow-inner">
+      <div class="p-2 bg-red-100">
+        <h3 class="text-sm font-bold text-red-700 mb-0">ข้อมูลการคืนสินค้า</h3>
+      </div>
+      <div class="p-4 flex flex-row gap-8">
+        <div>
+          <span class="text-xs text-red-400 block mb-1">จำนวนที่คืน</span>
+          <p class="font-semibold text-red-600">{{ data.ReturnedQuantity }} ชิ้น</p>
+        </div>
+        <div>
+          <span class="text-xs text-red-400 block mb-1">วันที่คืน</span>
+          <p class="font-semibold text-gray-700">
+            {{ data.ReturnedAt | date: 'dd/MMM/yyyy HH:mm' }}
+          </p>
+        </div>
+        <div class="flex-grow">
+          <span class="text-xs text-red-400 block mb-1">สาเหตุที่คืน</span>
+          <p class="font-semibold text-gray-700">{{ data.ReturnRemark || '-' }}</p>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="p-4 bg-gray-50 text-gray-500 text-sm italic">
+      ไม่มีข้อมูลการคืนสินค้าสำหรับรายการนี้
+    </div>
+  }
+</ng-template>
+
+<!-- ==================== Popup เพิ่ม/แก้ไข Product Order ==================== -->
+<custom-popup
+  [(visible)]="isPopupVisible"
+  [title]="popupMode === 'ADD' ? 'เพิ่มสินค้า' : 'แก้ไขสินค้า'"
+  [width]="620"
+  [buttons]="popupButtons"
+  [contentTemplate]="productOrderFormTemplate"
+  [closeOnOutsideClick]="false"
+  (onHidden)="onPopupHidden()"
+>
+</custom-popup>
+
+<ng-template #productOrderFormTemplate>
+  <div class="flex flex-col gap-4">
+    <!-- dropdown เลือก product — เก็บแค่ productId -->
+    <custom-select-box
+      label="สินค้า"
+      [dataSource]="availableProductOptions"
+      [isRequired]="true"
+      [searchEnabled]="true"
+      [showClearButton]="popupMode === 'ADD'"
+      placeholder="เลือกสินค้าที่ต้องการเบิก"
+      [(fieldValue)]="productOrderForm.productId"
+      (fieldValueChange)="onProductSelected($event)"
+    >
+    </custom-select-box>
+
+    <!-- Loading -->
+    @if (loadingService.isLoading() === true) {
+      <div class="flex items-center justify-center py-6 text-gray-500 text-sm">
+        กำลังโหลดข้อมูลสินค้า...
+      </div>
+    }
+
+    <!--
+      ข้อมูลสินค้า — โชว์อย่างเดียว ไม่มี input
+      แสดงเมื่อโหลดเสร็จแล้ว
+    -->
+    @if (selectedProductDetail && loadingService.isLoading() === false) {
+      <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <!-- รูป + รายละเอียด -->
+        <div class="flex flex-row gap-4 p-4 bg-gray-50">
+          <img
+            [src]="selectedProductDetail.imagePath || 'assets/no-image.png'"
+            [alt]="selectedProductDetail.productName"
+            class="w-24 h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+          />
+
+          <div class="flex flex-col gap-1 flex-grow">
+            <p class="font-semibold text-gray-800 text-base">
+              {{ selectedProductDetail.productName }}
+            </p>
+            <p class="text-sm text-gray-500">
+              {{ selectedProductDetail.description }}
+            </p>
+            <div class="flex flex-wrap gap-1 mt-1">
+              @for (cat of selectedProductDetail.categoryNames; track $index) {
+                <span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
+                  {{ cat }}
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Banner — โชว์อย่างเดียว -->
+        <div
+          [class]="
+            selectedProductDetail.quantity > 0
+              ? 'flex items-center justify-between px-4 py-2 bg-green-50 border-t border-green-200'
+              : 'flex items-center justify-between px-4 py-2 bg-red-50 border-t border-red-200'
+          "
+        >
+          <span
+            [class]="
+              selectedProductDetail.quantity > 0 ? 'text-sm text-green-700' : 'text-sm text-red-700'
+            "
+          >
+            สินค้าคงเหลือในสต็อก
+          </span>
+          <span
+            [class]="
+              selectedProductDetail.quantity > 0
+                ? 'font-bold text-green-700 text-lg'
+                : 'font-bold text-red-700 text-lg'
+            "
+          >
+            {{ selectedProductDetail.quantity }} ชิ้น
+            @if (selectedProductDetail.quantity === 0) {
+              <span class="text-xs font-normal ml-1">(สินค้าหมด)</span>
+            }
+          </span>
+        </div>
+      </div>
+
+      <!-- กรอกจำนวน — input เดียวที่ user กรอก -->
+      <custom-input
+        type="Number"
+        label="จำนวนที่ต้องการเบิก"
+        placeholder="กรอกจำนวน"
+        attributeName="quantity"
+        [isRequired]="true"
+        [min]="1"
+        [max]="selectedProductDetail.quantity"
+        [componentState]="orderState"
+        attributeName="quantity"
+        [(fieldValue)]="productOrderForm.quantity"
+      >
+      </custom-input>
+
+      <!-- Warning ถ้ากรอกเกิน stock -->
+      @if (
+        productOrderForm.quantity && productOrderForm.quantity > selectedProductDetail.quantity
+      ) {
+        <div class="flex items-center gap-2 text-red-600 text-sm">
+          <i class="dx-icon-warning"></i>
+          <span> จำนวนที่เบิกเกินสต็อกที่มี ({{ selectedProductDetail.quantity }} ชิ้น) </span>
+        </div>
+      }
+    }
+  </div>
+</ng-template>
