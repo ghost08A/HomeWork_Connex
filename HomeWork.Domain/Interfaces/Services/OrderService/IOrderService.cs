@@ -12,6 +12,7 @@ namespace HomeWork.Domain.Interfaces.Services.OrderService
         Task<List<ValueOptionResponseModel<string>>> GetStatusOrder();
         Task<List<ValueOptionResponseModel<string>>> GetStatusOrderDetail();
         Task<object> SearchOrderAsync(SearchOrderRequestModel request, CustomError error);
+        Task UpsertOrder(UpsertOrderRequestModel request, CustomError error);
 
     }
 }

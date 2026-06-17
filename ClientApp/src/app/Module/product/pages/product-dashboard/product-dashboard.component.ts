@@ -290,10 +290,7 @@ export class ProductDashboardComponent implements OnInit {
           this.isPopupVisible = false;
           this.dataGrid?.reload();
         });
-      },
-      error: (err) => {
-        console.error('Upsert Error:', err);
-      },
+      }
     });
   }
   public onProductPopupHidden(): void {

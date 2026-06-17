@@ -9,7 +9,8 @@
   [allowColumnResizing]="allowColumnResizing"
   [remoteOperations]="remoteOperations"
   (onRowClick)="onRowClick($event)"
-  (onSelectionChanged)="onSelectionChanged($event)">
+  (onSelectionChanged)="onSelectionChanged($event)"
+  (onCellPrepared)="handleCellPrepared($event)">
 
   <!-- Search Panel -->
   <dxo-search-panel [visible]="showSearchPanel"></dxo-search-panel>

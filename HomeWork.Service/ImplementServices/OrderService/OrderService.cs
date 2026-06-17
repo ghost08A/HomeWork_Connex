@@ -99,8 +99,284 @@ namespace HomeWork.Service.ImplementServices.OrderService
             });
 
             return await DevExtreme.AspNet.Data.DataSourceLoader.LoadAsync(selectQuery, request.LoadOptions);
+        }
+
+        public async Task UpsertOrder(UpsertOrderRequestModel request, CustomError error)
+        {
+            var user = _tokenService.GetCurrentUser();
+            var timeNow = DateTime.UtcNow;
+
+            ValidateRequest(request, error);
+            error.ThrowIfError();
+
+            bool isCreate = string.IsNullOrWhiteSpace(request.OrderId);
+            Order order;
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (isCreate)
+                {
+                    var newOrderId = await GenerateOrderIdAsync();
+                    order = new Order
+                    {
+                        OrderId = newOrderId,
+                        CreatedAt = timeNow,
+                        CreatedBy = user.UserId,
+                        UpdatedAt = timeNow,
+                        UpdatedBy = user.UserId,
+                        OrderDetails = new List<OrderDetail>()
+                    };
+
+                    _context.Orders.Add(order);
+                }
+                else
+                {
+                    order = await _context.Orders
+                        .Include(x => x.OrderDetails)
+                        .FirstOrDefaultAsync(x => x.OrderId == request.OrderId);
+
+                    if (order == null)
+                    {
+                        error.AddError("ไม่พบข้อมูลออเดอร์");
+                        error.ThrowIfError();
+                    }
+
+                    if (request.UpdatedAt.HasValue && request.UpdatedAt < order.UpdatedAt)
+                    {
+                        error.AddError("เวอร์ชั่นไม่ตรงกัน กรุณาลองใหม่อีกครั้ง");
+                    }
+                    error.ThrowIfError();
+                }
+                await ValidateOrderStockAsync(request, error);
+                error.ThrowIfError();
+
+                order.StatusOrderCode = request.StatusOrders;
+
+                if (!isCreate)
+                {
+                    order.UpdatedAt = timeNow;
+                    order.UpdatedBy = user.UserId;
+
+                    var requestDetailIds = request.OrderDetails
+                        .Where(x => x.OrderDetailId.HasValue && x.OrderDetailId.Value > 0)
+                        .Select(x => x.OrderDetailId!.Value)
+                        .ToList();
+
+                    var deletedDetails = order.OrderDetails
+                        .Where(x => !requestDetailIds.Contains(x.OrderDetailId))
+                        .ToList();
+
+                    if (deletedDetails.Any())
+                    {
+                        _context.OrderDetails.RemoveRange(deletedDetails);
+                    }
+                }
+                foreach (var detailRequest in request.OrderDetails)
+                {
+                    OrderDetail orderDetail;
+
+                    bool isNewDetail = !detailRequest.OrderDetailId.HasValue || detailRequest.OrderDetailId == 0;
+
+                    if (isNewDetail)
+                    {
+                        orderDetail = new OrderDetail
+                        {
+                            OrderId = order.OrderId
+                        };
+                        orderDetail.StatusOrderDetailCode = "APPROVED";
+                        if (detailRequest.ReturnedQuantity > 0)
+                        {
+                            error.AddError("ReturnedQuantity", "ไม่สามารถคืนสินค้าที่เพิ่งเพิ่มใหม่ได้");
+                        }
+                        order.OrderDetails.Add(orderDetail);
+                    }
+                    else
+                    {
+                        orderDetail = order.OrderDetails
+                            .FirstOrDefault(x => x.OrderDetailId == detailRequest.OrderDetailId.Value);
+
+                        if (orderDetail == null)
+                        {
+                            error.AddError("orderDetailId", $"ไม่พบรายการสินค้า ID: {detailRequest.OrderDetailId}");
+                            continue;
+                        }
+                        if(request.StatusOrders != "APPROVED" && detailRequest.ReturnedQuantity > 0)
+                        {
+                            error.AddError("ไม่สามารถคืนสิาค้าในออเดอร์ที่ยังไม่อนุมัติได้");
+                        }
+                        orderDetail.StatusOrderDetailCode = detailRequest.StatusOrderDetailCode;
+                    }
+                    bool isReturnedQuantityChanged = orderDetail.ReturnedQuantity != detailRequest.ReturnedQuantity;
+                    orderDetail.ProductId = detailRequest.ProductId;
+                    orderDetail.Seq = detailRequest.Sequence;
+                    orderDetail.Quantity = detailRequest.Quantity;
+                    orderDetail.Remark = detailRequest.Remark;
+                    orderDetail.ReturnedQuantity = detailRequest.ReturnedQuantity;
+                    orderDetail.ReturnRemark = detailRequest.ReturnRemark;
+
+                    //จัดการเวลาคืนของ (ReturnedAt) ให้ถูกต้อง
+                    if (detailRequest.ReturnedQuantity > 0)
+                    {
+                        if(orderDetail.Quantity > detailRequest.ReturnedQuantity)
+                        {
+                            orderDetail.StatusOrderDetailCode = "PARTIALRETURN";
+                        }else if (orderDetail.Quantity == detailRequest.ReturnedQuantity)
+                        {
+                            orderDetail.StatusOrderDetailCode = "RETURNED";
+                        }
+                        else
+                        {
+                            error.AddError("ไม่สามารถคืนสินค้าได้มากกว่า");
+                        }
+
+                            if (isReturnedQuantityChanged)
+                        {
+                            orderDetail.ReturnedAt = timeNow;
+                            
+                        }
+                    }
+                    else
+                    {
+                        // ถ้ายอดคืนเป็น 0 ให้เคลียร์เวลาทิ้ง (เผื่อกรณีแอดมินกดยกเลิกการคืน)
+                        orderDetail.ReturnedAt = null;
+                    }
+                }
+
+                error.ThrowIfError();
+
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
 
 
+        private static void ValidateRequest(UpsertOrderRequestModel request, CustomError error)
+        {
+            if (string.IsNullOrWhiteSpace(request.StatusOrders))
+            {
+                error.AddError("STATUS_ORDER_REQUIRED", "กรุณาระบุสถานะออเดอร์");
+            }
+
+            if (request.OrderDetails == null || !request.OrderDetails.Any())
+            {
+                error.AddError("ORDER_DETAIL_REQUIRED", "กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ");
+                return;
+            }
+
+            foreach (var detail in request.OrderDetails)
+            {
+                if (detail.ProductId <= 0)
+                {
+                    error.AddError("PRODUCT_REQUIRED", "กรุณาเลือกสินค้าให้ครบทุกแถว");
+                }
+
+                if (detail.Quantity <= 0)
+                {
+                    error.AddError("QUANTITY_INVALID", "จำนวนสินค้าต้องมากกว่า 0");
+                }
+
+                if (detail.ReturnedQuantity < 0)
+                {
+                    error.AddError("RETURNED_QUANTITY_INVALID", "จำนวนคืนสินค้าห้ามติดลบ");
+                }
+
+                if (detail.ReturnedQuantity > detail.Quantity)
+                {
+                    error.AddError("RETURNED_QUANTITY_OVER", "จำนวนคืนสินค้าห้ามมากกว่าจำนวนที่เบิก");
+                }
+            }
+        }
+
+        private async Task ValidateOrderStockAsync(UpsertOrderRequestModel request, CustomError error)
+        {
+            var requestProducts = request.OrderDetails
+                .GroupBy(x => x.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    RequestQuantity = g.Sum(x => x.Quantity)
+                })
+                .ToList();
+
+            var productIds = requestProducts
+                .Select(x => x.ProductId)
+                .ToList();
+
+            var products = await _context.Products
+                .Where(p => productIds.Contains(p.ProductId))
+                .Select(p => new
+                {
+                    p.ProductId,
+                    p.ProductName,
+                    StockQuantity = p.Quantity,
+
+                    BookedQuantity = p.OrderDetails
+                        .Where(od =>
+                            od.Order.StatusOrderCode == "APPROVED" &&
+                            (
+                                od.StatusOrderDetailCode == "APPROVED" ||
+                                od.StatusOrderDetailCode == "RETURNED" ||
+                                od.StatusOrderDetailCode == "PARTIALRETURN"
+                            )
+                        )
+                        .Sum(od => od.Quantity - od.ReturnedQuantity)
+                })
+                .ToListAsync();
+
+            foreach (var requestProduct in requestProducts)
+            {
+                var product = products.FirstOrDefault(x => x.ProductId == requestProduct.ProductId);
+
+                if (product == null)
+                {
+                    error.AddError("productId", $"ไม่พบสินค้า ProductId: {requestProduct.ProductId}");
+                    continue;
+                }
+
+                var availableQuantity = product.StockQuantity - product.BookedQuantity;
+
+                if (requestProduct.RequestQuantity > availableQuantity)
+                {
+                    error.AddError(
+                        "quantity",
+                        $"สินค้า {product.ProductName} คงเหลือ {availableQuantity} แต่ต้องการเบิก {requestProduct.RequestQuantity}"
+                    );
+                }
+            }
+        }
+        private async Task<string> GenerateOrderIdAsync()
+        {
+            var currentYear = DateTime.Now.Year;
+
+            var runningNumber = await _context.RunningNumbers
+                .FromSqlRaw("SELECT * FROM RunningNumbers WITH (UPDLOCK) WHERE Year = {0}", currentYear)
+                .FirstOrDefaultAsync();
+
+            if (runningNumber == null)
+            {
+                runningNumber = new RunningNumber
+                {
+                    Year = currentYear,
+                    LastNumber = 1
+                };
+
+                await _context.RunningNumbers.AddAsync(runningNumber);
+            }
+            else
+            {
+                runningNumber.LastNumber += 1;
+            }
+
+            await _context.SaveChangesAsync();
+
+            //  รีเทิร์นค่าแบบมีเลข 0 นำหน้า
+            return $"{currentYear}-{runningNumber.LastNumber.ToString("D5")}";
         }
     }
 }

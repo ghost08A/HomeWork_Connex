@@ -6,7 +6,8 @@ import { environment } from '../../../../environments/envaronment';
 import { ErrorEditorState } from '../../Shared/directives/validate-error.directive';
 import { catchErrorHandler } from '../../Shared/utils/swalHandler';
 import { valueOption } from '../../Shared/models/typecustom.model';
-import { OrderSearchRequestModel, OrderSearchResult, ProductDetail } from '../models/order.model';
+import { OrderSearchRequestModel, OrderSearchResult } from '../models/order.model';
+import { ProductDetail } from '../models/orderDetail.model';
 
 @Injectable({
   providedIn: 'root'

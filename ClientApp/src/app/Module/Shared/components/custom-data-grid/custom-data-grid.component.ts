@@ -74,6 +74,10 @@ export class CustomDataGridComponent {
   // template ของ detail row
   // หน้าบ้านสร้าง ng-template แล้วส่งเข้ามา
 
+  @Input() expandCondition?: (rowData: any) => boolean;
+  // function เช็คเงื่อนไขว่าแถวไหนกดขยาย detail ได้บ้าง
+  // ถ้า return false จะซ่อนปุ่มลูกศรลง
+
   // --------------------------------------------------
   // OUTPUTS
   // --------------------------------------------------
@@ -83,9 +87,24 @@ export class CustomDataGridComponent {
   @Output() selectionChanged = new EventEmitter<any[]>();
   // emit array ของแถวที่เลือกเมื่อ selection เปลี่ยน
 
+  @Output() cellPrepared = new EventEmitter<any>();
+  // emit e จาก onCellPrepared ของ DevExtreme
+
   // --------------------------------------------------
   // Functions
   // --------------------------------------------------
+
+  handleCellPrepared(e: any): void {
+    if (e.rowType === 'data' && e.column.command === 'expand') {
+      if (this.expandCondition && !this.expandCondition(e.data)) {
+        e.cellElement.classList.remove('dx-datagrid-expand');
+        e.cellElement.innerHTML = '';
+      }
+    }
+    
+    // ส่งต่อ event เผื่อ parent component ต้องการดักจับเอง
+    this.cellPrepared.emit(e);
+  }
 
   isButtonVisible(btn: ActionButton, rowData: any): boolean {
     if (!btn.visible) return true;

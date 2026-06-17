@@ -32,8 +32,9 @@
       />
     </div>
   </div>
-  <custom-data-grid
+  <custom-data-grid 
     #dataGrid
+    (cellPrepared)="onCellPrepared($event)"
     [dataSource]="orderDetails"
     keyExpr="productId"
     [columns]="columns"

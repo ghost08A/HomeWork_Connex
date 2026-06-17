@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ChangeDetectorRef, ViewChild, TemplateRef } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { CustomButtonComponent } from '../../../Shared/components/custom-button/custom-button.component';
@@ -9,8 +9,7 @@ import { CustomSelectBoxComponent } from '../../../Shared/components/custom-sele
 import { ActionButton, ColumnConfig, PopupButton, valueOption }
   from '../../../Shared/models/typecustom.model';
 import { ErrorEditorState } from '../../../Shared/directives/validate-error.directive';
-import {  OrderDetailTemp, ProductDetail, ProductOrderForm }
-  from '../../models/order.model';
+import {  OrderDetail, ProductDetail, ProductOrderForm, UpsertOrderPayload } from '../../models/orderDetail.model';
 import { MyOrderService } from '../../service/my-order.service';
 import { LoadingService } from '../../../Shared/services/loading.service';
 import { TagComponent } from '../../../Shared/components/tag/tag.component';
@@ -37,6 +36,7 @@ export class OrderDetailComponent implements OnInit {
   // โหมดหน้า
   public isEditMode: boolean = false;
   public currentOrderId: string | null = null;
+  public currentOrder: UpsertOrderPayload  = new UpsertOrderPayload();
 
   @ViewChild('categoryNamesTemplate', { static: true }) categoryNamesTemplate!: TemplateRef<unknown>;
 
@@ -72,7 +72,7 @@ export class OrderDetailComponent implements OnInit {
   // เริ่มต้นเปล่า ถ้า ADD
   // โหลดจาก API ถ้า EDIT (มี orderId)
   // ======================================
-  public orderDetails: OrderDetailTemp[] = [];
+  public orderDetails: OrderDetail[] = [];
 
   // sequence ถัดไป — คำนวณจาก array ปัจจุบัน
   // ใช้ตอนเพิ่มแถวใหม่
@@ -213,7 +213,7 @@ export class OrderDetailComponent implements OnInit {
   // ======================================
   // เปิด Popup EDIT
   // ======================================
-  public onEditProductOrder(rowData: OrderDetailTemp): void {
+  public onEditProductOrder(rowData: OrderDetail): void {
     this.popupMode = 'EDIT';
     this.editingProductId = rowData.productId; // จำไว้ว่าแก้แถวไหน โดยใช้ productId เพราะไม่ซ้ำกันแน่นอน
 
@@ -234,7 +234,7 @@ export class OrderDetailComponent implements OnInit {
   // ======================================
   // ลบแถวออกจาก array
   // ======================================
-  public onDeleteProductOrder(rowData: OrderDetailTemp): void {
+  public onDeleteProductOrder(rowData: OrderDetail): void {
     // กรองแถวโดยใช้ productId เพราะสินค้าในออเดอร์ห้ามซ้ำกันอยู่แล้ว
     this.orderDetails = this.orderDetails
       .filter(d => d.productId !== rowData.productId);
@@ -281,7 +281,7 @@ export class OrderDetailComponent implements OnInit {
     if (this.popupMode === 'ADD') {
 
       // สร้าง record ใหม่จากข้อมูล product ที่โหลดมา + จำนวนที่กรอก
-      const newDetail: OrderDetailTemp = {
+      const newDetail: OrderDetail = {
         orderDetailId:         null,  
         sequence:              this.nextSequence,
         productId:             this.selectedProductDetail.productId,
@@ -289,7 +289,7 @@ export class OrderDetailComponent implements OnInit {
         description:           this.selectedProductDetail.description,
         categoryNames:         this.selectedProductDetail.categoryNames,
         quantity:              this.productOrderForm.quantity,
-        statusOrderDetailCode: 'DRAFT',    
+        statusOrderDetailCode: null,    
         remark:                null,
         returnedQuantity:      0,
         returnedAt:            null,
@@ -336,22 +336,65 @@ export class OrderDetailComponent implements OnInit {
   // ปุ่ม Save Order ทั้งหมด
   // ======================================
   public onSaveDraft(): void {
-    // ส่ง orderDetails ทั้ง array ไป API แบบ DRAFT
-    console.log('Save Draft:', this.orderDetails);
+    this.saveOrder('DRAFT');
   }
 
   public onSave(): void {
-    // ส่ง orderDetails ทั้ง array ไป API แบบ Submit
-    console.log('Save:', this.orderDetails);
+    this.saveOrder('SUBMITTED');
   }
 
+  private saveOrder(targetStatus: string): void {
+    this.orderState.clearAllError();
+    const sortedDetails = [...this.orderDetails]
+      .sort((a, b) => a.sequence - b.sequence);
+
+    const payload: UpsertOrderPayload = {
+      orderId: this.currentOrder.orderId,
+      updatedAt: this.currentOrder.updatedAt,
+      statusOrders: targetStatus,
+      orderDetails: sortedDetails.map((item, index) => {
+          const isNewItem = item.orderDetailId !== null && item.orderDetailId < 0;
+          const finalDetailId = isNewItem ? null : item.orderDetailId;
+        return {
+          orderDetailId: finalDetailId,
+          sequence: index + 1,
+          productId: item.productId,
+          quantity: item.quantity,
+          statusOrderDetailCode: item.statusOrderDetailCode,
+          remark: item.remark,
+          returnedQuantity: item.returnedQuantity,
+          returnRemark: item.returnRemark,
+        };
+      })
+    }
+  }
+//insert
   public onCancel(): void {
     // กลับหน้าก่อน หรือ clear array
     this.orderDetails = [];
   }
 
-  public canExpandDetailRow = (rowData: OrderDetailTemp): boolean => {
+  public canExpandDetailRow = (rowData: OrderDetail): boolean => {
     return rowData.returnedQuantity > 0;
   };
 
+  public onCellPrepared(e: any): void {
+    // 1. เช็คว่าเซลล์นี้อยู่ในแถวข้อมูล (ไม่ใช่หัวตาราง) และเป็นคอลัมน์ปุ่มขยาย (expand)
+  if (e.rowType === 'data' && e.column.command === 'expand') {
+    
+    const rowData: OrderDetail = e.data;
+
+  if (rowData.returnedQuantity <= 0) {
+      
+      // ล้าง HTML (ลบรูปลูกศรทิ้ง)
+      e.cellElement.innerHTML = '';
+      
+      // ลบ Class ที่เป็นตัวควบคุมการทำงานของ DevExtreme ออก
+      e.cellElement.classList.remove('dx-datagrid-expand'); 
+      
+      // ยกเลิกไม่ให้เม้าส์คลิกได้
+      e.cellElement.style.pointerEvents = 'none'; 
+    }
+  }
+  }
 }

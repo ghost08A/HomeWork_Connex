@@ -1,36 +1,6 @@
 import { LoadOptions } from "devextreme/data";
 
-export class ProductOrderForm {
-  productId: number | null = null;  // null = Create, มีค่า = Update
-  quantity: number | null = null;
-}
 
-export interface ProductDetail {
-  productId: number;
-  productName: string;
-  description: string;
-  imagePath: string;
-  price: number;
-  quantity: number;      
-  categoryNames: string[];
-}
-
-export interface OrderDetailTemp {
-  orderDetailId: number|null;    
-  sequence: number;
-  productId: number;         
-  productName: string;       
-  description: string;      
-  categoryNames: string[];     
-  quantity: number;            
-  statusOrderDetailCode: string; 
-  remark: string | null;            
-  
-
-  returnedQuantity: number; 
-  returnedAt: Date | null;  
-  returnRemark: string | null;
-}
 export interface OrderSearchRequestModel {
     loadOptions: LoadOptions;
     keyword: string | null;

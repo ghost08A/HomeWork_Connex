@@ -124,7 +124,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
                     Price = p.Price,
                     Quantity = p.Quantity - p.OrderDetails
                       .Where(od => od.Order.StatusOrderCode == "APPROVED" &&
-                            (od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode =="RETURNED"))
+                            (od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode =="RETURNED" || od.StatusOrderDetailCode == "PARTIALRETURN"))
                       .Sum(od => od.Quantity - od.ReturnedQuantity),
                     CategoryNames =p.ProductCategories
                         .Select(pc=> pc.Category.CategoryName).ToList()
