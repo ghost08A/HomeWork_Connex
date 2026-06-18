@@ -228,6 +228,7 @@ export class OrderDetailComponent implements OnInit {
     ];
   }
   public openReturnPopup(rowData: OrderDetail): void {
+    this.orderState.clearAllError();
     this.returnFormData = {
       productId: rowData.productId,
       productName: rowData.productName,
@@ -246,12 +247,29 @@ export class OrderDetailComponent implements OnInit {
 
   // 3. ฟังก์ชันกดยืนยันการคืนสินค้า
   public confirmReturn(): void {
-    // อัปเดตข้อมูลลงใน Array หลัก (orderDetails)
+    this.orderState.clearAllError();
+    let hasError = false;
+
+    if (this.returnFormData.returnedQuantity <= 0) 
+      this.orderState.setError('returnedQuantity', 'กรุณากรอกจำนวนที่ต้องการคืนอย่างน้อย 1 ชิ้น');
+    if (this.returnFormData.returnedQuantity > this.returnFormData.maxQuantity) 
+      this.orderState.setError('returnedQuantity', `ไม่สามารถคืนสินค้าเกิน ${this.returnFormData.maxQuantity} ชิ้นได้`);
+    if (!this.returnFormData.returnRemark || this.returnFormData.returnRemark.trim() === '') 
+      this.orderState.setError('returnRemark', 'กรุณาระบุเหตุผลที่คืนสินค้า');
+    hasError = this.orderState.hasError('returnedQuantity') || this.orderState.hasError('returnRemark');
+    if (hasError) return;
+
     const targetIndex = this.orderDetails.findIndex(x => x.productId === this.returnFormData.productId);
     
     if (targetIndex !== -1) {
-      this.orderDetails[targetIndex].returnedQuantity = this.returnFormData.returnedQuantity;
-      this.orderDetails[targetIndex].returnRemark = this.returnFormData.returnRemark;
+      this.orderDetails = this.orderDetails.map((item, index) => index === targetIndex
+        ? {
+            ...item,
+            returnedQuantity: this.returnFormData.returnedQuantity,
+            returnRemark: this.returnFormData.returnRemark,
+          }
+        : item
+      );
       notify('บันทึกข้อมูลการคืนสินค้าในตารางแล้ว (อย่าลืมกด SAVE เพื่อยืนยัน)', 'success', 3000);
     }
     this.closeReturnPopup();
@@ -453,7 +471,7 @@ export class OrderDetailComponent implements OnInit {
     
     const rowData: OrderDetail = e.data;
 
-  if (rowData.statusOrderDetailCode !== 'RETURNED' && rowData.statusOrderDetailCode !== "PARTIALRETURN") {
+  if (rowData.returnedQuantity <= 0) {
       
       // ล้าง HTML (ลบรูปลูกศรทิ้ง)
       e.cellElement.innerHTML = '';

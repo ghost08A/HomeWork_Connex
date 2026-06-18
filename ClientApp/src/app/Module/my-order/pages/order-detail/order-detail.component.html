@@ -23,14 +23,18 @@
     </div>
 
     <div>
-    @if(currentOrder.statusOrders !== 'APPROVED' && currentOrder.statusOrders !== 'REJECTED' && currentOrder.statusOrders !== 'WAITAPPROVE') {
-      <custom-button
-        text="เพิ่มรายการสินค้า"
-        icon="plus"
-        type="success"
-        stylingMode="contained"
-        (onClick)="onAddNewProductOrder()"
-      />
+      @if (
+        currentOrder.statusOrders !== 'APPROVED' &&
+        currentOrder.statusOrders !== 'REJECTED' &&
+        currentOrder.statusOrders !== 'WAITAPPROVE'
+      ) {
+        <custom-button
+          text="เพิ่มรายการสินค้า"
+          icon="plus"
+          type="success"
+          stylingMode="contained"
+          (onClick)="onAddNewProductOrder()"
+        />
       }
     </div>
   </div>
@@ -52,7 +56,7 @@
       [remoteOperations]="true"
     />
     <div class="flex flex-col md:flex-row gap-4 justify-end items-center mt-2">
-      @if (currentOrder.statusOrders === null ||currentOrder.statusOrders === 'DRAFT') {
+      @if (currentOrder.statusOrders === null || currentOrder.statusOrders === 'DRAFT') {
         <custom-button
           text="SAVE DRAFT"
           icon="save"
@@ -61,7 +65,11 @@
           (onClick)="onSaveOrder('DRAFT')"
         />
       }
-      @if (currentOrder.statusOrders === 'SUBMIT'||currentOrder.statusOrders === 'DRAFT' || currentOrder.statusOrders === null) {
+      @if (
+        currentOrder.statusOrders === 'SUBMIT' ||
+        currentOrder.statusOrders === 'DRAFT' ||
+        currentOrder.statusOrders === null
+      ) {
         <custom-button
           text="SAVE"
           icon="check"
@@ -78,16 +86,15 @@
           (onClick)="onSaveOrder('WAITAPPROVE')"
         />
       }
-        @if (currentOrder.statusOrders === 'APPROVED') {
+      @if (currentOrder.statusOrders === 'APPROVED') {
         <custom-button
           text="SAVE"
           icon="save"
-          type="default"
+          type="success"
           stylingMode="contained"
           (onClick)="onSaveOrder(null)"
         />
       }
-      
 
       <custom-button
         text="CANCEL"
@@ -257,7 +264,6 @@
   </div>
 </ng-template>
 
-
 <custom-popup
   [(visible)]="isReturnPopupVisible"
   title="ระบุรายละเอียดการคืนสินค้า"
@@ -265,33 +271,41 @@
   height="auto"
   [showCloseButton]="true"
   [contentTemplate]="returnPopupTemplate"
-  [buttons]="returnPopupButtons" />
+  [buttons]="returnPopupButtons"
+/>
 
-  <ng-template #returnPopupTemplate>
-    <div class="flex flex-col gap-4 py-2">
-      <div class="p-3 bg-blue-50 text-blue-800 rounded-md border border-blue-100">
-        <div class="font-bold mb-1">{{ returnFormData.productName }}</div>
-        <div class="text-sm">
-          จำนวนที่เบิกทั้งหมด: <span class="font-semibold">{{ returnFormData.maxQuantity }}</span> ชิ้น
-        </div>
+<ng-template #returnPopupTemplate>
+  <div class="flex flex-col gap-4 py-2">
+    <div class="p-3 bg-blue-50 text-blue-800 rounded-md border border-blue-100">
+      <div class="font-bold mb-1">{{ returnFormData.productName }}</div>
+      <div class="text-sm">
+        จำนวนที่เบิกทั้งหมด:
+        <span class="font-semibold">{{ returnFormData.maxQuantity }}</span> ชิ้น
       </div>
-
-      <custom-input
-        type="Number"
-        label="จำนวนที่คืน"
-        [isRequired]="true"
-        [(fieldValue)]="returnFormData.returnedQuantity"
-        [min]="0"
-        [max]="returnFormData.maxQuantity"
-        placeholder="ระบุจำนวน...">
-      </custom-input>
-
-      <custom-input
-        type="TextArea"
-        label="เหตุผลที่คืน"
-        [isRequired]="true"
-        [(fieldValue)]="returnFormData.returnRemark"
-        placeholder="ระบุเหตุผลการคืนสินค้า (เช่น สินค้าชำรุด, เบิกเกินจำนวน...)">
-      </custom-input>
     </div>
-  </ng-template>
+
+    <custom-input
+      type="Number"
+      label="จำนวนที่คืน"
+      [isRequired]="true"
+      attributeName="returnedQuantity"
+      [componentState]="orderState"
+      [(fieldValue)]="returnFormData.returnedQuantity"
+      [min]="1"
+      [max]="returnFormData.maxQuantity"
+      placeholder="ระบุจำนวน..."
+    >
+    </custom-input>
+
+    <custom-input
+      type="TextArea"
+      label="เหตุผลที่คืน"
+      [isRequired]="true"
+      attributeName="returnRemark"
+      [componentState]="orderState"
+      [(fieldValue)]="returnFormData.returnRemark"
+      placeholder="ระบุเหตุผลการคืนสินค้า (เช่น สินค้าชำรุด, เบิกเกินจำนวน...)"
+    >
+    </custom-input>
+  </div>
+</ng-template>
