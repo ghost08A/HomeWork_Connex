@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, AfterViewInit, TemplateRef, ViewChild} from '@angular/core';
+import { Component, inject, OnInit, AfterViewInit, TemplateRef, ViewChild } from '@angular/core';
 import { CustomInputComponent } from '../../../Shared/components/custom-input/custom-input.component';
 import { CustomTagBoxComponent } from '../../../Shared/components/custom-tag-box/custom-tag-box.component';
 import { ActionButton, ColumnConfig, valueOption } from '../../../Shared/models/typecustom.model';
@@ -13,6 +13,8 @@ import { OrderDetail, OrderSearchRequestModel } from '../../models/order.model';
 import CustomStore from 'devextreme/data/custom_store';
 import { LoadOptions } from 'devextreme/data';
 import { Router } from '@angular/router';
+import { ConfirmDialogService } from '../../../Shared/services/confirm-dialog.service';
+import { UpsertOrderPayload } from '../../models/orderDetail.model';
 // ======================================
 // Data Models
 // ======================================
@@ -31,9 +33,13 @@ import { Router } from '@angular/router';
 })
 export class OrderDashboardComponent implements OnInit, AfterViewInit {
   public loadingService = inject(LoadingService);
+  private confirm = inject(ConfirmDialogService);
 
-  constructor(private router:Router,private myOrderService: MyOrderService) {}
-  
+  constructor(
+    private router: Router,
+    private myOrderService: MyOrderService,
+  ) {}
+
   // ======================================
   // ตัวเลือก Product & Status
   // ======================================
@@ -44,7 +50,7 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
   // ======================================
   public searchKeyword: string = '';
   public selectedProducts: string[] = [];
-  public selectedStatus:  (string | number)[] = [];
+  public selectedStatus: (string | number)[] = [];
   public startDate: Date | null = null;
   public endDate: Date | null = null;
 
@@ -53,44 +59,49 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
   @ViewChild('dataGrid') dataGrid?: CustomDataGridComponent;
   @ViewChild('statusTemplate', { static: true }) statusTemplate!: TemplateRef<any>;
 
-   public masterColumns: ColumnConfig[] = [];
-   public detailColumns: ColumnConfig[] = [];
+  public masterColumns: ColumnConfig[] = [];
+  public detailColumns: ColumnConfig[] = [];
 
-   public actionButtons: ActionButton[] = [
+  public actionButtons: ActionButton[] = [
     {
-        text: '',
-        icon: "checkmarkcircle",
-        type: 'success',
-        stylingMode: 'text',
-        disabled: (rowData) => rowData.statusOrder !== 'Draft',
-        onClick: (rowdata) => {}
+      text: '',
+      icon: 'checkmarkcircle',
+      type: 'success',
+      stylingMode: 'text',
+      disabled: (rowData) => rowData.statusOrder !== 'PENDING',
+      onClick: (rowdata) => this.onSendToApprove(rowdata.orderId),
     },
     {
-        text: '',
-        icon: 'edit',
-        type: 'default',
-        stylingMode: 'text',
-        disabled: (rowData) => rowData.statusOrder === 'REJECTED' || rowData.statusOrder === 'WAITAPPROVE',
-        onClick: (rowdata) => {
-          this.router.navigate(['/my-order/order-detail'],{
-            queryParams: {
-              orderId: rowdata.orderId
-            }
-          });
-        }
+      text: '',
+      icon: 'edit',
+      type: 'default',
+      stylingMode: 'text',
+      disabled: (rowData) =>
+        rowData.statusOrder === 'REJECTED' || rowData.statusOrder === 'WAITAPPROVE',
+      onClick: (rowdata) => {
+        this.router.navigate(['/my-order/order-detail'], {
+          queryParams: {
+            orderId: rowdata.orderId,
+          },
+        });
       },
-      {
-        text: '',
-        icon: 'trash',
-        type: 'danger',
-        stylingMode: 'text',
-        disabled: (rowData) => rowData.statusOrder === 'APPROVED' || rowData.statusOrder === 'REJECTED' || rowData.statusOrder === 'WAITAPPROVE',
-        onClick: (rowdata) => {}
-      },
-      
-   ];
+    },
+    {
+      text: '',
+      icon: 'trash',
+      type: 'danger',
+      stylingMode: 'text',
+      disabled: (rowData) =>
+        rowData.statusOrder === 'APPROVED' ||
+        rowData.statusOrder === 'REJECTED' ||
+        rowData.statusOrder === 'WAITAPPROVE',
+      onClick: (rowdata) => this.onDeleteOrder(rowdata.orderId)
+    },
+  ];
 
-   ngOnInit(): void {
+  
+
+  ngOnInit(): void {
     this.masterColumns = [
       {
         dataField: 'orderId',
@@ -126,7 +137,7 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
         format: 'dd/MMM/yyyy',
         alignment: 'center',
         width: 120,
-      }
+      },
     ];
     this.detailColumns = [
       {
@@ -162,18 +173,18 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
         alignment: 'center',
         cellTemplate: this.statusTemplate,
         width: 100,
-      }
+      },
     ];
-   }
+  }
 
-   ngAfterViewInit(): void {
+  ngAfterViewInit(): void {
     this.loadInitialData();
-   }
+  }
 
-   private loadInitialData(): void {
+  private loadInitialData(): void {
     forkJoin({
-        products: this.myOrderService.getProductOptions(),
-        statusOrders: this.myOrderService.getStatusOrder(),
+      products: this.myOrderService.getProductOptions(),
+      statusOrders: this.myOrderService.getStatusOrder(),
     }).subscribe({
       next: (res) => {
         console.log('Status Orders API response:', res.statusOrders);
@@ -183,43 +194,38 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         console.error('API Error:', err);
-      }
-    })
-   }
+      },
+    });
+  }
 
-   private buildDataSource(): void {
+  private buildDataSource(): void {
     this.gridDataSource = new DataSource({
       store: new CustomStore({
         key: 'orderId',
         load: (loadOptions: LoadOptions) => {
           const request: OrderSearchRequestModel = {
-            loadOptions:      loadOptions,
-            keyword:          this.searchKeyword || null,
-            statusOrder:     this.selectedStatus.length > 0
-                                ? this.selectedStatus.map(String)
-                                : null,
-            productIds:       this.selectedProducts.length > 0
-                                ? this.selectedProducts.map(Number)
-                                : null,
-            startDate:        this.startDate || null,
-            endDate:          this.endDate || null,
+            loadOptions: loadOptions,
+            keyword: this.searchKeyword || null,
+            statusOrder: this.selectedStatus.length > 0 ? this.selectedStatus.map(String) : null,
+            productIds: this.selectedProducts.length > 0 ? this.selectedProducts.map(Number) : null,
+            startDate: this.startDate || null,
+            endDate: this.endDate || null,
           };
 
-          return lastValueFrom(this.myOrderService.searchOrders(request))
-            .then((res) => ({
-              data:       res.data.map((p) => this.mapToOrder(p)),
-              totalCount: res.totalCount,
-            }));
+          return lastValueFrom(this.myOrderService.searchOrders(request)).then((res) => ({
+            data: res.data.map((p) => this.mapToOrder(p)),
+            totalCount: res.totalCount,
+          }));
         },
-      })
+      }),
     });
 
     // ViewChild พร้อมแน่นอน (เรียกจาก ngAfterViewInit) ไม่ต้องใช้ setTimeout
     this.dataGrid?.setDataSource(this.gridDataSource);
-   }
-   private mapToOrder(res: OrderDetail): any {
+  }
+  private mapToOrder(res: OrderDetail): any {
     const productList = res.products || [];
-    const combinedProductNames = productList.map(p => p.productName).join(', ');
+    const combinedProductNames = productList.map((p) => p.productName).join(', ');
 
     return {
       orderId: res.orderId,
@@ -228,13 +234,13 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
       statusOrder: res.statusOrder,
       orderDate: new Date(res.orderDate),
       products: productList,
-    }
-   }
+    };
+  }
 
   public onSearch(): void {
     this.dataGrid?.reload();
   }
-  
+
   public onClear(): void {
     this.searchKeyword = '';
     this.selectedStatus = [];
@@ -246,5 +252,65 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
 
   public onAddNewOrder(): void {
     this.router.navigate(['/my-order/order-detail']);
+  }
+
+  public async onSendToApprove(orderId: string): Promise<void> {
+    const confirmed = await this.confirm.confirm({
+      title: 'ยืนยันการส่งอนุมัติ',
+      message: 'ต้องการเปลี่ยนสถานะออเดอร์นี้เป็น WAITAPPROVE ใช่หรือไม่?',
+      icon: 'save',
+      confirmText: 'ยืนยัน',
+      confirmType: 'success',
+      cancelText: 'ยกเลิก',
+    });
+
+    if (!confirmed) return;
+
+    this.myOrderService.getOrderById(orderId).subscribe({
+      next: (order) => {
+        const payload: UpsertOrderPayload = {
+          orderId: order.orderId,
+          updatedAt: order.updatedAt,
+          statusOrders: 'WAITAPPROVE',
+          orderDetails: order.orderDetails
+            .sort((a, b) => a.sequence - b.sequence)
+            .map((item, index) => ({
+              orderDetailId: item.orderDetailId,
+              sequence: index + 1,
+              productId: item.productId,
+              quantity: item.quantity,
+              statusOrderDetailCode: item.statusOrderDetailCode,
+              remark: item.remark,
+              returnedQuantity: item.returnedQuantity,
+              returnRemark: item.returnRemark,
+            })),
+        };
+
+        this.myOrderService.upsertOrder(payload).subscribe({
+          next: () => {
+            this.dataGrid?.reload();
+          },
+        });
+      },
+    });
+  }
+
+  public async onDeleteOrder(orderId: string): Promise<void> {
+    const confirmed = await this.confirm.confirm({
+      title: 'ยืนยันการลบออเดอร์',
+      message: 'คุณต้องการลบออเดอร์นี้ใช่หรือไม่?\nเมื่อลบแล้วจะไม่สามารถกู้คืนได้',
+      icon: 'delete',
+      confirmText: 'ลบ',
+      confirmType: 'danger',
+      cancelText: 'ยกเลิก',
+    });
+
+    if (!confirmed) return;
+
+    this.myOrderService.deleteOrder(orderId).subscribe({
+      next: () => {
+        this.dataGrid?.reload();
+      },
+    })
   }
 }

@@ -55,9 +55,10 @@ export class MyOrderService {
   }
 
   public upsertOrder(request: UpsertOrderPayload): Observable<UpsertOrderResponse> {
-    return this.http
-      .post<UpsertOrderResponse>(this.apiUrl + '/Order/UpsertOrder', request)
-      .pipe(this.apiPipe());
+    return this.http.post<UpsertOrderResponse>(this.apiUrl + '/Order/UpsertOrder', request).pipe(this.apiPipe());
+  }
+  public deleteOrder(orderId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/Order/${orderId}`).pipe(this.apiPipe());
   }
 
   // ตัวดักจับ Error

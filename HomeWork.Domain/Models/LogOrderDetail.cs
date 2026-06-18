@@ -11,7 +11,7 @@ public partial class LogOrderDetail
 
     public int? OrderDetailId { get; set; }
 
-    public int? OrderId { get; set; }
+    public string OrderId { get; set; }
 
     public string Action { get; set; }
 

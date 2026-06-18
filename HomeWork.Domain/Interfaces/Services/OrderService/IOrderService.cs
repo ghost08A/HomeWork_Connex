@@ -19,5 +19,6 @@ namespace HomeWork.Domain.Interfaces.Services.OrderService
         Task<object> SearchOrderAsync(SearchOrderRequestModel request, CustomError error);
         Task<string> UpsertOrder(UpsertOrderRequestModel request, CustomError error);
 
+        Task DeleteOrder(string orderId, CustomError error);
     }
 }

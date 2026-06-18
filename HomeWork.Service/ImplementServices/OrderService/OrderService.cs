@@ -170,14 +170,16 @@ namespace HomeWork.Service.ImplementServices.OrderService
             var user = _tokenService.GetCurrentUser();
             var timeNow = DateTime.UtcNow;
 
-            ValidateRequest(request, error);
+            ValidateRequest(request, error); //ตรวจสอบคร่าวๆ
             error.ThrowIfError();
 
             bool isCreate = string.IsNullOrWhiteSpace(request.OrderId);
             Order order;
+            string? oldStatusOrderCode = null; 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                //สร้างข้อมูลเคร่าวๆ
                 if (isCreate)
                 {
                     var newOrderId = await GenerateOrderIdAsync();
@@ -211,8 +213,13 @@ namespace HomeWork.Service.ImplementServices.OrderService
                     }
                     error.ThrowIfError();
                 }
+
+                oldStatusOrderCode = order.StatusOrderCode; //เก็บสถานะเก่า
+                //เช็คว่าเบิกเกินมั้ย
                 await ValidateOrderStockAsync(request, error);
                 error.ThrowIfError();
+
+                //ดึงราคาปัจจุบันของสินค้า
                 var productIds = request.OrderDetails
                     .Select(x => x.ProductId)
                     .Distinct()
@@ -227,13 +234,26 @@ namespace HomeWork.Service.ImplementServices.OrderService
                     })
                     .ToDictionaryAsync(x => x.ProductId, x => x.Price);
 
-
+                bool isStatusChanged = isCreate || oldStatusOrderCode != request.StatusOrders;
                 order.StatusOrderCode = request.StatusOrders;
+                if (isStatusChanged)
+                {
+                    order.UpdatedBy = user.UserId;
+                    _context.LogOrders.Add(new LogOrder
+                    {
+                        OrderId = order.OrderId,
+                        Action = isCreate ? "CREATE" : "STATUS_CHANGE",
+                        StatusOrderCode = order.StatusOrderCode,
+                        CreatedAt = order.CreatedAt,
+                        CreatedBy = order.CreatedBy,
+                        UpdatedAt = isCreate ? null : timeNow,
+                        UpdatedBy = isCreate ? null : user.UserId
+                    });
+                }
 
-                if (!isCreate)
+                if (!isCreate) //ถ้าอัพเดตให้หาตัวที่ไม่เกี่ยวข้องแล้วลบ
                 {
                     order.UpdatedAt = timeNow;
-                    order.UpdatedBy = user.UserId;
 
                     var requestDetailIds = request.OrderDetails
                         .Where(x => x.OrderDetailId.HasValue && x.OrderDetailId.Value > 0)
@@ -243,23 +263,50 @@ namespace HomeWork.Service.ImplementServices.OrderService
                     var deletedDetails = order.OrderDetails
                         .Where(x => !requestDetailIds.Contains(x.OrderDetailId))
                         .ToList();
-
                     if (deletedDetails.Any())
                     {
+                        foreach (var deletedDetail in deletedDetails)
+                        {
+                            _context.LogOrderDetails.Add(new LogOrderDetail
+                            {
+                                OrderDetailId = deletedDetail.OrderDetailId,
+                                OrderId = order.OrderId,
+                                Action = "DELETE",
+                                ProductId = deletedDetail.ProductId,
+                                Seq = deletedDetail.Seq,
+                                StatusOrderDetailCode = deletedDetail.StatusOrderDetailCode,
+                                Remark = deletedDetail.Remark,
+                                UnitPrice = deletedDetail.UnitPrice,
+                                Quantity = deletedDetail.Quantity,
+                                CreatedAt = deletedDetail.CreatedAt,
+                                CreatedBy = deletedDetail.CreatedBy,
+                                UpdatedAt = timeNow,
+                                UpdatedBy = user.UserId,
+                                ReturnedQuantity = deletedDetail.ReturnedQuantity,
+                                ReturnedAt = deletedDetail.ReturnedAt,
+                                ReturnRemark = deletedDetail.ReturnRemark
+                            });
+                        }
                         _context.OrderDetails.RemoveRange(deletedDetails);
                     }
                 }
+                var newOrderDetails = new List<OrderDetail>();
+
                 foreach (var detailRequest in request.OrderDetails)
                 {
                     OrderDetail orderDetail;
+                    string detailAction;
 
-                    bool isNewDetail = !detailRequest.OrderDetailId.HasValue || detailRequest.OrderDetailId == 0;
+                    bool isNewDetail = !detailRequest.OrderDetailId.HasValue || detailRequest.OrderDetailId <= 0;
 
                     if (isNewDetail)
                     {
+                        detailAction = "CREATE";
                         orderDetail = new OrderDetail
                         {
-                            OrderId = order.OrderId
+                            OrderId = order.OrderId,
+                            CreatedAt = timeNow,
+                            CreatedBy = user.UserId
                         };
                         orderDetail.StatusOrderDetailCode = "APPROVED";
                         if (detailRequest.ReturnedQuantity > 0)
@@ -270,6 +317,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
                     }
                     else
                     {
+                        detailAction = "UPDATE";
                         orderDetail = order.OrderDetails
                             .FirstOrDefault(x => x.OrderDetailId == detailRequest.OrderDetailId.Value);
 
@@ -283,6 +331,8 @@ namespace HomeWork.Service.ImplementServices.OrderService
                             error.AddError("ไม่สามารถคืนสิาค้าในออเดอร์ที่ยังไม่อนุมัติได้");
                         }
                         orderDetail.StatusOrderDetailCode = detailRequest.StatusOrderDetailCode;
+                        orderDetail.UpdatedAt = timeNow;
+                        orderDetail.UpdatedBy = user.UserId;
                     }
 
                     if (!productPrices.TryGetValue(detailRequest.ProductId, out var unitPrice))
@@ -326,11 +376,64 @@ namespace HomeWork.Service.ImplementServices.OrderService
                         // ถ้ายอดคืนเป็น 0 ให้เคลียร์เวลาทิ้ง (เผื่อกรณีแอดมินกดยกเลิกการคืน)
                         orderDetail.ReturnedAt = null;
                     }
+                    if (isNewDetail)
+                    {
+                        newOrderDetails.Add(orderDetail); //เก็บไว้ก่อน
+                    }
+                    else
+                    {
+                        _context.LogOrderDetails.Add(new LogOrderDetail
+                        {
+                            OrderDetailId = orderDetail.OrderDetailId,
+                            OrderId = order.OrderId,
+                            Action = detailAction,
+                            ProductId = orderDetail.ProductId,
+                            Seq = orderDetail.Seq,
+                            StatusOrderDetailCode = orderDetail.StatusOrderDetailCode,
+                            Remark = orderDetail.Remark,
+                            UnitPrice = orderDetail.UnitPrice,
+                            Quantity = orderDetail.Quantity,
+                            CreatedAt = orderDetail.CreatedAt,
+                            CreatedBy = orderDetail.CreatedBy,
+                            UpdatedAt = timeNow,
+                            UpdatedBy = user.UserId,
+                            ReturnedQuantity = orderDetail.ReturnedQuantity,
+                            ReturnedAt = orderDetail.ReturnedAt,
+                            ReturnRemark = orderDetail.ReturnRemark,
+                        });
+                    }
+                    
+                   
                 }
 
                 error.ThrowIfError();
 
                 await _context.SaveChangesAsync();
+                // Log รายการใหม่หลัง SaveChanges → OrderDetailId มีค่าแล้ว
+                foreach (var newDetail in newOrderDetails)
+                {
+                    _context.LogOrderDetails.Add(new LogOrderDetail
+                    {
+                        OrderDetailId = newDetail.OrderDetailId, // ✅ มีค่าแล้ว
+                        OrderId = order.OrderId,
+                        Action = "CREATE",
+                        ProductId = newDetail.ProductId,
+                        Seq = newDetail.Seq,
+                        StatusOrderDetailCode = newDetail.StatusOrderDetailCode,
+                        Remark = newDetail.Remark,
+                        UnitPrice = newDetail.UnitPrice,
+                        Quantity = newDetail.Quantity,
+                        CreatedAt = newDetail.CreatedAt,
+                        CreatedBy = newDetail.CreatedBy,
+                        UpdatedAt = null,
+                        UpdatedBy = null,
+                        ReturnedQuantity = newDetail.ReturnedQuantity,
+                        ReturnedAt = newDetail.ReturnedAt,
+                        ReturnRemark = newDetail.ReturnRemark,
+                    });
+                }
+
+                await _context.SaveChangesAsync(); // บันทึก Log รายการใหม่
 
                 await transaction.CommitAsync();
                 return order.OrderId;
@@ -343,6 +446,60 @@ namespace HomeWork.Service.ImplementServices.OrderService
             }
         }
 
+        public async Task DeleteOrder(string orderId, CustomError error)
+        {
+            var user = _tokenService.GetCurrentUser();
+
+            if (string.IsNullOrWhiteSpace(orderId))
+            {
+                error.AddError("orderId", "กรุณาระบุรหัสออเดอร์");
+                error.ThrowIfError();
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var order = await _context.Orders
+                    .Include(x => x.OrderDetails)
+                    .FirstOrDefaultAsync(x => x.OrderId == orderId);
+
+                if (order == null)
+                {
+                    error.AddError("orderId", "ไม่พบข้อมูลออเดอร์");
+                    error.ThrowIfError();
+                }
+
+                if (order.CreatedBy != user.UserId)
+                {
+                    error.AddError("permission", "ไม่สามารถลบออเดอร์ของผู้อื่นได้");
+                    error.ThrowIfError();
+                }
+
+
+                if (order.StatusOrderCode == "APPROVED" || order.StatusOrderCode == "REJECTED")
+                {
+                    error.AddError("status", "ไม่สามารถลบออเดอร์ที่อนุมัติหรือปฏิเสธแล้วได้");
+                    error.ThrowIfError();
+                }
+
+                if (order.OrderDetails.Any())
+                {
+                    _context.OrderDetails.RemoveRange(order.OrderDetails);
+                }
+
+                _context.Orders.Remove(order);
+
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
 
         private static void ValidateRequest(UpsertOrderRequestModel request, CustomError error)
         {

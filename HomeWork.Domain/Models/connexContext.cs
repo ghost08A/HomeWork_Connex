@@ -103,6 +103,7 @@ public partial class connexContext : DbContext
                 .IsRequired()
                 .HasMaxLength(10);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.OrderId).HasMaxLength(255);
             entity.Property(e => e.Remark).HasMaxLength(200);
             entity.Property(e => e.ReturnedAt).HasColumnType("timestamp without time zone");
             entity.Property(e => e.ReturnedQuantity).HasDefaultValue(0);

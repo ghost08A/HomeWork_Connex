@@ -59,5 +59,16 @@ namespace Web.HomeWork.Controllers.OrderController
             var OrderId = await _orderService.UpsertOrder(request, error);
             return Ok(new { orderId = OrderId });
         }
+        [HttpDelete("{orderId}")]
+        public async Task<IActionResult> DeleteOrder(string orderId)
+        {
+            var error = new CustomError();
+
+            await _orderService.DeleteOrder(orderId, error);
+
+            error.ThrowIfError();
+
+            return NoContent();
+        }
     }
 }
