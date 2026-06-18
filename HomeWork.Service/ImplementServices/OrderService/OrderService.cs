@@ -48,10 +48,74 @@ namespace HomeWork.Service.ImplementServices.OrderService
             return statusDetailOrder;
         }
 
+        public async Task<GetOrderByIdResponseModel> GetOrderById(string orderId, CustomError error)
+        {
+            if (string.IsNullOrWhiteSpace(orderId))
+            {
+                error.AddError("orderId", "กรุณาระบุรหัสออเดอร์");
+                error.ThrowIfError();
+            }
+
+            var order = await _context.Orders
+                .AsNoTracking()
+                .Where(o => o.OrderId == orderId)
+                .Select(o => new GetOrderByIdResponseModel
+                {
+                    OrderId = o.OrderId,
+                    StatusOrders = o.StatusOrderCode,
+                    UpdatedAt = o.UpdatedAt,
+
+                    OrderDetails = o.OrderDetails
+                    .OrderBy(od => od.Seq)
+                    .Select(od => new OrderDetailItemResponseModel
+                    {
+                        OrderDetailId = od.OrderDetailId,
+                        Sequence = od.Seq,
+
+                        ProductId = od.ProductId,
+                        ProductName = od.Product.ProductName,
+                        Description = od.Product.Detail,
+
+                        CategoryNames = od.Product.ProductCategories
+                            .Select(pc => pc.Category.CategoryName)
+                            .ToList(),
+
+                        Quantity = od.Quantity,
+                        StatusOrderDetailCode = od.StatusOrderDetailCode,
+                        Remark = od.Remark,
+
+                        ReturnedQuantity = od.ReturnedQuantity,
+                        ReturnedAt = od.ReturnedAt,
+                        ReturnRemark = od.ReturnRemark
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+
+            if (order == null)
+            {
+                error.AddError("orderId", "ไม่พบข้อมูลออเดอร์");
+                error.ThrowIfError();
+            }
+
+            return order!;
+        }
+
 
         public async Task<object> SearchOrderAsync(SearchOrderRequestModel request, CustomError error)
         {
+            var user = _tokenService.GetCurrentUser();
             var query = _context.Orders.AsNoTracking().AsQueryable();
+
+            if (user != null)
+            {
+                bool isAdmin = user.Roles != null && user.Roles.Any(r => r.Equals("admin", StringComparison.OrdinalIgnoreCase) || r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase));
+                if (!isAdmin)
+                {
+                    // ถ้าไม่ใช่ admin ให้ดูได้เฉพาะออเดอร์ของตัวเอง
+                    query = query.Where(o => o.CreatedBy == user.UserId);
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(request.Keyword))
             {
@@ -101,7 +165,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
             return await DevExtreme.AspNet.Data.DataSourceLoader.LoadAsync(selectQuery, request.LoadOptions);
         }
 
-        public async Task UpsertOrder(UpsertOrderRequestModel request, CustomError error)
+        public async Task<string> UpsertOrder(UpsertOrderRequestModel request, CustomError error)
         {
             var user = _tokenService.GetCurrentUser();
             var timeNow = DateTime.UtcNow;
@@ -149,6 +213,20 @@ namespace HomeWork.Service.ImplementServices.OrderService
                 }
                 await ValidateOrderStockAsync(request, error);
                 error.ThrowIfError();
+                var productIds = request.OrderDetails
+                    .Select(x => x.ProductId)
+                    .Distinct()
+                    .ToList();
+
+                var productPrices = await _context.Products
+                    .Where(x => productIds.Contains(x.ProductId))
+                    .Select(x => new
+                    {
+                        x.ProductId,
+                        x.Price
+                    })
+                    .ToDictionaryAsync(x => x.ProductId, x => x.Price);
+
 
                 order.StatusOrderCode = request.StatusOrders;
 
@@ -206,10 +284,18 @@ namespace HomeWork.Service.ImplementServices.OrderService
                         }
                         orderDetail.StatusOrderDetailCode = detailRequest.StatusOrderDetailCode;
                     }
+
+                    if (!productPrices.TryGetValue(detailRequest.ProductId, out var unitPrice))
+                    {
+                        error.AddError($"ไม่พบราคาสินค้า ProductId: {detailRequest.ProductId}");
+                        continue;
+                    }
+
                     bool isReturnedQuantityChanged = orderDetail.ReturnedQuantity != detailRequest.ReturnedQuantity;
                     orderDetail.ProductId = detailRequest.ProductId;
                     orderDetail.Seq = detailRequest.Sequence;
                     orderDetail.Quantity = detailRequest.Quantity;
+                    orderDetail.UnitPrice = unitPrice;
                     orderDetail.Remark = detailRequest.Remark;
                     orderDetail.ReturnedQuantity = detailRequest.ReturnedQuantity;
                     orderDetail.ReturnRemark = detailRequest.ReturnRemark;
@@ -247,6 +333,8 @@ namespace HomeWork.Service.ImplementServices.OrderService
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
+                return order.OrderId;
+               
             }
             catch
             {
@@ -355,7 +443,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
             var currentYear = DateTime.Now.Year;
 
             var runningNumber = await _context.RunningNumbers
-                .FromSqlRaw("SELECT * FROM RunningNumbers WITH (UPDLOCK) WHERE Year = {0}", currentYear)
+                .FromSqlRaw("SELECT * FROM \"RunningNumber\" WHERE \"Year\" = {0} FOR UPDATE", currentYear)
                 .FirstOrDefaultAsync();
 
             if (runningNumber == null)

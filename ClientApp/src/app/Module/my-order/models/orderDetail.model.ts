@@ -43,6 +43,29 @@ export interface OrderDetailPayload {
 export class UpsertOrderPayload {
   orderId: string | null = null; // null = Create, มีค่า = Update
   updatedAt : Date|null = null; // ใช้สำหรับ Update เพื่อเช็คว่า order นี้มีการแก้ไขจากที่อื่นหรือไม่
-  statusOrders: string = 'DRAFT'; // สถานะของ order ทั้งหมด (เช่น DRAFT, SUBMITTED, APPROVED, REJECTED) 
+  statusOrders: string|null = null; // สถานะของ order ทั้งหมด (เช่น DRAFT, SUBMITTED, APPROVED, REJECTED) 
   orderDetails: OrderDetailPayload[] = []; // รายละเอียดของแต่ละ order detail ที่จะส่งไป API
+}
+
+export interface UpsertOrderResponse {
+  orderId: string;
+}
+
+export interface GetOrderByIdResponse {
+  orderId: string;
+  statusOrders: string;
+  updatedAt: Date | null;
+  orderDetails: OrderDetail[];
+}
+
+export type OrderActionStatus = 'DRAFT' | 'SUBMIT' | 'WAITAPPROVE'| null;
+
+
+export interface ReturnFormData{
+  productId: number;
+  productName: string;
+  maxQuantity: number;
+  returnedQuantity: number;
+  returnRemark: string;
+
 }

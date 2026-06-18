@@ -4,7 +4,7 @@ import { LoadOptions } from "devextreme/data";
 export interface OrderSearchRequestModel {
     loadOptions: LoadOptions;
     keyword: string | null;
-    statusOrders: string[] | null;
+    statusOrder: string[] | null;
     productIds: number[] | null;
     startDate: Date | null;
     endDate: Date | null;

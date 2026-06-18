@@ -23,6 +23,7 @@
     </div>
 
     <div>
+    @if(currentOrder.statusOrders !== 'APPROVED' && currentOrder.statusOrders !== 'REJECTED' && currentOrder.statusOrders !== 'WAITAPPROVE') {
       <custom-button
         text="เพิ่มรายการสินค้า"
         icon="plus"
@@ -30,31 +31,73 @@
         stylingMode="contained"
         (onClick)="onAddNewProductOrder()"
       />
+      }
     </div>
   </div>
-  <custom-data-grid 
-    #dataGrid
-    (cellPrepared)="onCellPrepared($event)"
-    [dataSource]="orderDetails"
-    keyExpr="productId"
-    [columns]="columns"
-    [actionButtons]="actionButtons"
-    actionColumnCaption="จัดการ"
-    [actionColumnWidth]="200"
-    [hasDetailRow]="true"
-    [masterDetailTemplate]="returnDetailTemplate"
-    [showSearchPanel]="false"
-    [pageSize]="10"
-    [remoteOperations]="true"
-  />
-  <div class="flex flex-col md:flex-row gap-4 justify-end items-center mt-2">
-    <custom-button text="SAVE DRAFT" icon="save" type="default" stylingMode="contained" />
+  @if (loadingService.isLoading() === false) {
+    <custom-data-grid
+      #dataGrid
+      (cellPrepared)="onCellPrepared($event)"
+      [dataSource]="orderDetails"
+      keyExpr="productId"
+      [columns]="columns"
+      [actionButtons]="actionButtons"
+      actionColumnCaption="จัดการ"
+      [actionColumnWidth]="200"
+      [hasDetailRow]="true"
+      [masterDetailTemplate]="returnDetailTemplate"
+      [expandCondition]="canExpandDetailRow"
+      [showSearchPanel]="false"
+      [pageSize]="10"
+      [remoteOperations]="true"
+    />
+    <div class="flex flex-col md:flex-row gap-4 justify-end items-center mt-2">
+      @if (currentOrder.statusOrders === null ||currentOrder.statusOrders === 'DRAFT') {
+        <custom-button
+          text="SAVE DRAFT"
+          icon="save"
+          type="default"
+          stylingMode="contained"
+          (onClick)="onSaveOrder('DRAFT')"
+        />
+      }
+      @if (currentOrder.statusOrders === 'SUBMIT'||currentOrder.statusOrders === 'DRAFT' || currentOrder.statusOrders === null) {
+        <custom-button
+          text="SAVE"
+          icon="check"
+          type="success"
+          stylingMode="contained"
+          (onClick)="onSaveOrder('SUBMIT')"
+        />
+      } @else if (currentOrder.statusOrders === 'PENDING') {
+        <custom-button
+          text="CONFIRM"
+          icon="check"
+          type="success"
+          stylingMode="contained"
+          (onClick)="onSaveOrder('WAITAPPROVE')"
+        />
+      }
+        @if (currentOrder.statusOrders === 'APPROVED') {
+        <custom-button
+          text="SAVE"
+          icon="save"
+          type="default"
+          stylingMode="contained"
+          (onClick)="onSaveOrder(null)"
+        />
+      }
+      
 
-    <custom-button text="SAVE" icon="check" type="success" stylingMode="contained"> </custom-button>
-
-    <custom-button text="CANCEL" icon="close" type="normal" stylingMode="contained">
-    </custom-button>
-  </div>
+      <custom-button
+        text="CANCEL"
+        icon="close"
+        type="normal"
+        stylingMode="contained"
+        (onClick)="onCancel()"
+      />
+    </div>
+  }
 </div>
 
 <ng-template #categoryNamesTemplate let-cell>
@@ -62,7 +105,7 @@
 </ng-template>
 
 <ng-template #returnDetailTemplate let-data>
-  @if (data.ReturnedQuantity > 0) {
+  @if (data.returnedQuantity > 0) {
     <div class="bg-red-50 border border-red-200 shadow-inner">
       <div class="p-2 bg-red-100">
         <h3 class="text-sm font-bold text-red-700 mb-0">ข้อมูลการคืนสินค้า</h3>
@@ -70,17 +113,17 @@
       <div class="p-4 flex flex-row gap-8">
         <div>
           <span class="text-xs text-red-400 block mb-1">จำนวนที่คืน</span>
-          <p class="font-semibold text-red-600">{{ data.ReturnedQuantity }} ชิ้น</p>
+          <p class="font-semibold text-red-600">{{ data.returnedQuantity }} ชิ้น</p>
         </div>
         <div>
           <span class="text-xs text-red-400 block mb-1">วันที่คืน</span>
           <p class="font-semibold text-gray-700">
-            {{ data.ReturnedAt | date: 'dd/MMM/yyyy HH:mm' }}
+            {{ data.returnedAt | date: 'dd/MMM/yyyy HH:mm' }}
           </p>
         </div>
         <div class="flex-grow">
           <span class="text-xs text-red-400 block mb-1">สาเหตุที่คืน</span>
-          <p class="font-semibold text-gray-700">{{ data.ReturnRemark || '-' }}</p>
+          <p class="font-semibold text-gray-700">{{ data.returnRemark || '-' }}</p>
         </div>
       </div>
     </div>
@@ -213,3 +256,42 @@
     }
   </div>
 </ng-template>
+
+
+<custom-popup
+  [(visible)]="isReturnPopupVisible"
+  title="ระบุรายละเอียดการคืนสินค้า"
+  [width]="450"
+  height="auto"
+  [showCloseButton]="true"
+  [contentTemplate]="returnPopupTemplate"
+  [buttons]="returnPopupButtons" />
+
+  <ng-template #returnPopupTemplate>
+    <div class="flex flex-col gap-4 py-2">
+      <div class="p-3 bg-blue-50 text-blue-800 rounded-md border border-blue-100">
+        <div class="font-bold mb-1">{{ returnFormData.productName }}</div>
+        <div class="text-sm">
+          จำนวนที่เบิกทั้งหมด: <span class="font-semibold">{{ returnFormData.maxQuantity }}</span> ชิ้น
+        </div>
+      </div>
+
+      <custom-input
+        type="Number"
+        label="จำนวนที่คืน"
+        [isRequired]="true"
+        [(fieldValue)]="returnFormData.returnedQuantity"
+        [min]="0"
+        [max]="returnFormData.maxQuantity"
+        placeholder="ระบุจำนวน...">
+      </custom-input>
+
+      <custom-input
+        type="TextArea"
+        label="เหตุผลที่คืน"
+        [isRequired]="true"
+        [(fieldValue)]="returnFormData.returnRemark"
+        placeholder="ระบุเหตุผลการคืนสินค้า (เช่น สินค้าชำรุด, เบิกเกินจำนวน...)">
+      </custom-input>
+    </div>
+  </ng-template>

@@ -9,10 +9,13 @@ import { CustomSelectBoxComponent } from '../../../Shared/components/custom-sele
 import { ActionButton, ColumnConfig, PopupButton, valueOption }
   from '../../../Shared/models/typecustom.model';
 import { ErrorEditorState } from '../../../Shared/directives/validate-error.directive';
-import {  OrderDetail, ProductDetail, ProductOrderForm, UpsertOrderPayload } from '../../models/orderDetail.model';
+import {  OrderActionStatus, OrderDetail, ProductDetail, ProductOrderForm, ReturnFormData, UpsertOrderPayload } from '../../models/orderDetail.model';
 import { MyOrderService } from '../../service/my-order.service';
 import { LoadingService } from '../../../Shared/services/loading.service';
 import { TagComponent } from '../../../Shared/components/tag/tag.component';
+import { Router } from '@angular/router';
+import { ConfirmDialogService } from '../../../Shared/services/confirm-dialog.service';
+import notify from 'devextreme/ui/notify';
 
 @Component({
   selector: 'order-detail',
@@ -31,6 +34,8 @@ import { TagComponent } from '../../../Shared/components/tag/tag.component';
 })
 export class OrderDetailComponent implements OnInit {
   public loadingService = inject(LoadingService);
+  private confirm = inject(ConfirmDialogService);
+
   public orderState = new ErrorEditorState();
 
   // โหมดหน้า
@@ -42,6 +47,7 @@ export class OrderDetailComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private myOrderService: MyOrderService,
   ) {}
 
@@ -53,29 +59,19 @@ export class OrderDetailComponent implements OnInit {
   get availableProductOptions(): valueOption[] {
     // รหัสสินค้าที่ถูกเลือกไปแล้วในตาราง
     const selectedProductIds = this.orderDetails.map(d => d.productId);
-    
     return this.productOptions.filter(opt => {
       const productId = Number(opt.key);
-      
       // ถ้ากำลังอยู่ในโหมด EDIT ให้เว้น product เดิมที่กำลังแก้ไว้ให้ยังเลือกได้
       if (this.popupMode === 'EDIT' && this.productOrderForm.productId === productId) {
         return true;
       }
-      
       // ถ้าไม่ได้ถูกเลือกไปแล้วก็ให้แสดง
       return !selectedProductIds.includes(productId);
     });
   }
 
-  // ======================================
-  // orderDetails — array หลักที่เก็บรายการสินค้าในออเดอร์นี้
-  // เริ่มต้นเปล่า ถ้า ADD
-  // โหลดจาก API ถ้า EDIT (มี orderId)
-  // ======================================
   public orderDetails: OrderDetail[] = [];
 
-  // sequence ถัดไป — คำนวณจาก array ปัจจุบัน
-  // ใช้ตอนเพิ่มแถวใหม่
   private get nextSequence(): number {
     if (this.orderDetails.length === 0) return 1;
     return Math.max(...this.orderDetails.map(d => d.sequence)) + 1;
@@ -84,12 +80,21 @@ export class OrderDetailComponent implements OnInit {
   // ======================================
   // Popup & Form
   // ======================================
+
+
   public isPopupVisible: boolean = false;
   public popupMode: 'ADD' | 'EDIT' = 'ADD';
   public productOrderForm: ProductOrderForm = new ProductOrderForm();
 
-  // เก็บ productId ที่กำลังแก้ไขอยู่
-  // null = กำลัง ADD อยู่
+  public isReturnPopupVisible: boolean = false;
+  public returnFormData:ReturnFormData = {
+    productId: 0,
+    productName: '',
+    maxQuantity: 0,
+    returnedQuantity: 0,
+    returnRemark: ''
+  };
+
   private editingProductId: number | null = null;
 
   // ข้อมูล product ที่โหลดมาโชว์ใน popup
@@ -104,15 +109,18 @@ export class OrderDetailComponent implements OnInit {
   public actionButtons: ActionButton[] = [
     {
       text: '', icon: 'edit', type: 'default', stylingMode: 'text',
+      disabled: () => this.currentOrder.statusOrders === 'APPROVED' || this.currentOrder.statusOrders === 'REJECTED' || this.currentOrder.statusOrders === 'WAITAPPROVE',
       onClick: (rowData) => this.onEditProductOrder(rowData),
     },
     {
       text: '', icon: 'return', type: 'normal', stylingMode: 'text',
-      onClick: (rowData) => {},
+      disabled: () => this.currentOrder.statusOrders != 'APPROVED',
+      onClick: (rowData) => this.openReturnPopup(rowData),
     },
     {
       text: '', icon: 'trash', type: 'danger', stylingMode: 'text',
-      onClick: (rowData) => this.onDeleteProductOrder(rowData),
+      disabled: () => this.currentOrder.statusOrders === 'APPROVED' || this.currentOrder.statusOrders === 'REJECTED' || this.currentOrder.statusOrders === 'WAITAPPROVE',
+      onClick: (rowData) => this.onDeleteRow(rowData),
     },
   ];
 
@@ -145,29 +153,35 @@ export class OrderDetailComponent implements OnInit {
   }
 
   private loadOrderData(id: string): void {
-    // TODO: เรียก API getOrderById แล้วเอา products มาใส่ orderDetails
-    // this.myOrderService.getOrderById(id).subscribe({
-    //   next: (res) => {
-    //     this.orderDetails = res.products.map((p, index) => ({
-    //       orderDetailId: p.productId,
-    //       sequence: index + 1,
-    //       productId: p.productId,
-    //       productName: p.productName,
-    //       description: '',
-    //       categoryNames: [],
-    //       quantity: p.quantity,
-    //       statusOrderDetailCode: p.status,
-    //       remark: null,
-    //       returnedQuantity: 0,
-    //       returnedAt: null,
-    //       returnRemark: null,
-    //     }));
-    //   }
-    // });
+    this.myOrderService.getOrderById(id).subscribe({
+      next: (res) => {
+        // Map response to component variables
+        this.currentOrder.orderId = res.orderId;
+        this.currentOrder.statusOrders = res.statusOrders;
+        this.currentOrder.updatedAt = res.updatedAt;
+        
+        // Map orderDetails to grid format
+        this.orderDetails = res.orderDetails.map(od => ({
+          orderDetailId: od.orderDetailId,
+          sequence: od.sequence,
+          productId: od.productId,
+          productName: od.productName,
+          description: od.description,
+          categoryNames: od.categoryNames,
+          quantity: od.quantity,
+          statusOrderDetailCode: od.statusOrderDetailCode,
+          remark: od.remark,
+          returnedQuantity: od.returnedQuantity,
+          returnedAt: od.returnedAt,
+          returnRemark: od.returnRemark
+        }));
+        
+      },
+    });
   }
 
   private loadInitialData(): void {
-    this.myOrderService.getProductOptions().subscribe({
+    this.myOrderService.getProductOptions(true).subscribe({
       next: (res) => {
         this.productOptions = res || [];
       },
@@ -177,6 +191,24 @@ export class OrderDetailComponent implements OnInit {
   // ======================================
   // Popup Buttons
   // ======================================
+
+  get returnPopupButtons(): PopupButton[] {
+    return [
+        {
+        text: 'ยกเลิก',
+        type: 'normal',
+        stylingMode: 'outlined',
+        onClick: () => { this.isReturnPopupVisible = false; },
+      },
+      {
+        text: 'บันทึก',
+        type: 'success',
+        stylingMode: 'contained',
+        onClick: () => this.confirmReturn(),
+      }
+    ]
+  }
+
   get popupButtons(): PopupButton[] {
     return [
       {
@@ -194,6 +226,35 @@ export class OrderDetailComponent implements OnInit {
         onClick: () => { this.saveProductOrder(); },
       },
     ];
+  }
+  public openReturnPopup(rowData: OrderDetail): void {
+    this.returnFormData = {
+      productId: rowData.productId,
+      productName: rowData.productName,
+      maxQuantity: rowData.quantity, // ล็อกจำนวนสูงสุดที่คืนได้
+      returnedQuantity: rowData.returnedQuantity > 0 ? rowData.returnedQuantity : 1, 
+      returnRemark: rowData.returnRemark || ''
+    };
+    
+    this.isReturnPopupVisible = true;
+  }
+
+  // 2. ฟังก์ชันปิด Popup
+  public closeReturnPopup(): void {
+    this.isReturnPopupVisible = false;
+  }
+
+  // 3. ฟังก์ชันกดยืนยันการคืนสินค้า
+  public confirmReturn(): void {
+    // อัปเดตข้อมูลลงใน Array หลัก (orderDetails)
+    const targetIndex = this.orderDetails.findIndex(x => x.productId === this.returnFormData.productId);
+    
+    if (targetIndex !== -1) {
+      this.orderDetails[targetIndex].returnedQuantity = this.returnFormData.returnedQuantity;
+      this.orderDetails[targetIndex].returnRemark = this.returnFormData.returnRemark;
+      notify('บันทึกข้อมูลการคืนสินค้าในตารางแล้ว (อย่าลืมกด SAVE เพื่อยืนยัน)', 'success', 3000);
+    }
+    this.closeReturnPopup();
   }
 
   // ======================================
@@ -332,18 +393,21 @@ export class OrderDetailComponent implements OnInit {
     this.orderState.clearAllError();
   }
 
-  // ======================================
-  // ปุ่ม Save Order ทั้งหมด
-  // ======================================
-  public onSaveDraft(): void {
-    this.saveOrder('DRAFT');
+
+  public async onSaveOrder(status: OrderActionStatus){
+      const confirmed = await this.confirm.confirm({
+      title: 'คุณต้องการบันทึกใช่หรือไม่?',
+      message: 'บันทึกข้อมูลออเดอร์ของคุณ\nคุณสามารถกลับมาแก้ไขได้ในภายหลัง',
+      icon: 'save',
+      confirmText: 'ยืนยัน',  
+      confirmType: 'success',
+      cancelText: 'ยกเลิก(เปลี่ยนใจ)',
+    });
+    if (!confirmed) return;
+     this.saveOrder(status);
   }
 
-  public onSave(): void {
-    this.saveOrder('SUBMITTED');
-  }
-
-  private saveOrder(targetStatus: string): void {
+  private saveOrder(targetStatus: OrderActionStatus): void {
     this.orderState.clearAllError();
     const sortedDetails = [...this.orderDetails]
       .sort((a, b) => a.sequence - b.sequence);
@@ -351,7 +415,7 @@ export class OrderDetailComponent implements OnInit {
     const payload: UpsertOrderPayload = {
       orderId: this.currentOrder.orderId,
       updatedAt: this.currentOrder.updatedAt,
-      statusOrders: targetStatus,
+      statusOrders: targetStatus ?? this.currentOrder.statusOrders ,
       orderDetails: sortedDetails.map((item, index) => {
           const isNewItem = item.orderDetailId !== null && item.orderDetailId < 0;
           const finalDetailId = isNewItem ? null : item.orderDetailId;
@@ -367,12 +431,17 @@ export class OrderDetailComponent implements OnInit {
         };
       })
     }
+    console.log('Payload to save:', payload);
+    this.myOrderService.upsertOrder(payload).subscribe({
+      next: (res) => {
+        this.currentOrderId = res.orderId;
+        console.log('Order saved with ID:', res.orderId);
+        this.router.navigate(['/my-order/order-dashboard']);
+      }
+    });
   }
 //insert
-  public onCancel(): void {
-    // กลับหน้าก่อน หรือ clear array
-    this.orderDetails = [];
-  }
+  
 
   public canExpandDetailRow = (rowData: OrderDetail): boolean => {
     return rowData.returnedQuantity > 0;
@@ -384,7 +453,7 @@ export class OrderDetailComponent implements OnInit {
     
     const rowData: OrderDetail = e.data;
 
-  if (rowData.returnedQuantity <= 0) {
+  if (rowData.statusOrderDetailCode !== 'RETURNED' && rowData.statusOrderDetailCode !== "PARTIALRETURN") {
       
       // ล้าง HTML (ลบรูปลูกศรทิ้ง)
       e.cellElement.innerHTML = '';
@@ -397,4 +466,31 @@ export class OrderDetailComponent implements OnInit {
     }
   }
   }
+
+  async onDeleteRow(rowData: OrderDetail){
+    const confirmed = await this.confirm.confirm({
+      title: 'ยืนยันการลบ',
+      message: 'คุณต้องการลบสินค้านี้ใช่หรือไม่?\nไม่สามารถกู้คืนได้',
+      icon: 'delete',
+      confirmText: 'ลบ',
+      confirmType: 'danger',
+    });
+    if (!confirmed) return;
+    this.onDeleteProductOrder(rowData);
+  }
+
+  async onCancel() {
+     const confirmed = await this.confirm.confirm({
+      title: 'ต้องการยกเลิกการใช่หรือไม่?',
+      message: 'หากคุณยกเลิก\nข้อมูลที่กรอกจะไม่ถูกบันทึกและกลับไปหน้าออเดอร์ทั้งหมด',
+      icon: 'delete',
+      confirmText: 'ยืนยัน',  
+      confirmType: 'danger',
+      cancelText: 'ยกเลิก(เปลี่ยนใจ)',
+    });
+    if (!confirmed) return;
+    this.router.navigate(['/my-order/order-dashboard']);
+  }
+
+  
 }

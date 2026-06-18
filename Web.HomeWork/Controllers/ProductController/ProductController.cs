@@ -21,9 +21,9 @@ namespace Web.HomeWork.Controllers.ProductController
             _productService = productService;
         }
         [HttpGet("Product")]
-        public async Task<IActionResult> GetProducts()
+        public async Task<IActionResult> GetProducts(bool onlyAvailable = false)
         {
-            var products = await _productService.GetProducts();
+            var products = await _productService.GetProducts(onlyAvailable);
             return Ok(products);
         }
 

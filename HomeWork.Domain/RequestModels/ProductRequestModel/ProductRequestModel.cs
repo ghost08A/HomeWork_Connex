@@ -13,6 +13,31 @@ namespace HomeWork.Domain.RequestModels.ProductRequestModel
         public List<int>? CategoryIds { get; set; }
     }
 
+    public class OrderDetailItemResponseModel
+    {
+        public int? OrderDetailId { get; set; }
+        public int Sequence { get; set; }
+        public int ProductId { get; set; }
+        public string ProductName { get; set; }
+        public string Description { get; set; }
+        public List<string> CategoryNames { get; set; } = new List<string>();
+        public int Quantity { get; set; }
+        public string? StatusOrderDetailCode { get; set; }
+        public string? Remark { get; set; }
+
+        public int ReturnedQuantity { get; set; }
+        public DateTime? ReturnedAt { get; set; }
+        public string? ReturnRemark { get; set; }
+    }
+    public class GetOrderByIdResponseModel
+    {
+        public string OrderId { get; set; }
+        public string StatusOrders { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
+        public List<OrderDetailItemResponseModel> OrderDetails { get; set; } = new List<OrderDetailItemResponseModel>();
+    }
+
     public class CreateProductRequestModel
     {
         public string ProductName { get; set; }

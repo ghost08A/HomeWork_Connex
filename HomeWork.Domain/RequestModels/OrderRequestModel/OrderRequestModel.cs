@@ -4,6 +4,7 @@ using System.Text;
 
 namespace HomeWork.Domain.RequestModels.OrderRequestModel
 {
+    
     public class OrderDetailRequestModel
     {
         public int? OrderDetailId { get; set; }
@@ -11,7 +12,7 @@ namespace HomeWork.Domain.RequestModels.OrderRequestModel
         public int Sequence { get; set; }
         public int Quantity { get; set; }
 
-        public string StatusOrderDetailCode { get; set; }
+        public string? StatusOrderDetailCode { get; set; }
         public string? Remark { get; set; }
         public int ReturnedQuantity { get; set; } = 0;
         public string? ReturnRemark { get; set; }
@@ -22,8 +23,8 @@ namespace HomeWork.Domain.RequestModels.OrderRequestModel
         public DateTime? UpdatedAt { get; set; }
         public string StatusOrders { get; set; }
         public List<OrderDetailRequestModel> OrderDetails { get; set; } = new();
-
     }
+
     public class SearchOrderRequestModel
     {
         public DevExtreme.AspNet.Data.DataSourceLoadOptionsBase LoadOptions { get; set; } = new DevExtreme.AspNet.Data.DataSourceLoadOptionsBase();
@@ -33,4 +34,6 @@ namespace HomeWork.Domain.RequestModels.OrderRequestModel
         public DateTime? EndDate { get; set; } 
         public List<int>? ProductIds { get; set; }
     }
+
+    
 }

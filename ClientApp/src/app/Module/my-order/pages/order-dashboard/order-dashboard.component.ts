@@ -70,7 +70,7 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
         icon: 'edit',
         type: 'default',
         stylingMode: 'text',
-        disabled: (rowData) => rowData.statusOrder === 'APPROVED' || rowData.statusOrder === 'REJECTED' || rowData.statusOrder === 'WAITAPPROVE',
+        disabled: (rowData) => rowData.statusOrder === 'REJECTED' || rowData.statusOrder === 'WAITAPPROVE',
         onClick: (rowdata) => {
           this.router.navigate(['/my-order/order-detail'],{
             queryParams: {
@@ -195,7 +195,7 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
           const request: OrderSearchRequestModel = {
             loadOptions:      loadOptions,
             keyword:          this.searchKeyword || null,
-            statusOrders:     this.selectedStatus.length > 0
+            statusOrder:     this.selectedStatus.length > 0
                                 ? this.selectedStatus.map(String)
                                 : null,
             productIds:       this.selectedProducts.length > 0

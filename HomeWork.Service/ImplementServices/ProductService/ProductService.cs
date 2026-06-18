@@ -1,4 +1,5 @@
 using Dapper;
+using GitHub.Copilot.SDK.Rpc;
 using HomeWork.Domain.Interfaces.Services.ProductService;
 using HomeWork.Domain.Interfaces.Services.RawSqlServices;
 using HomeWork.Domain.Interfaces.Services.TokenService;
@@ -72,18 +73,31 @@ namespace HomeWork.Service.ImplementServices.ProductService
             return await DevExtreme.AspNet.Data.DataSourceLoader.LoadAsync(selectQuery, request.LoadOptions);
         }
 
-        public async Task<List<ValueOptionResponseModel<int>>> GetProducts()
+        public async Task<List<ValueOptionResponseModel<int>>> GetProducts(bool onlyAvailable = false)
         {
-            var product = await _context.Products
-               .AsNoTracking()
-               //.Where(p => p.StatusProductCode != "INACTIVE")
+            var query = _context.Products.AsNoTracking().AsQueryable();
+
+            if (onlyAvailable)
+            {
+                query = query.Where(p =>
+                    p.StatusProductCode == "ACTIVE" &&
+                    (p.Quantity - p.OrderDetails
+                        .Where(od => od.Order.StatusOrderCode == "APPROVED" &&
+                                    (od.StatusOrderDetailCode == "APPROVED" ||
+                                     od.StatusOrderDetailCode == "RETURNED" ||
+                                     od.StatusOrderDetailCode == "PARTIALRETURN"))
+                        .Sum(od => od.Quantity - od.ReturnedQuantity)) > 0
+                );
+            }
+            var products = await query
                .Select(c => new ValueOptionResponseModel<int>
                {
                    Key = c.ProductId,
                    Value = c.ProductName
                })
                .ToListAsync();
-            return product;
+
+            return products;
         }
         public async Task<List<ValueOptionResponseModel<int>>> GetGategories()
         {
@@ -307,7 +321,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 bookedQuantity = await _context.OrderDetails
                        .Where(od => od.ProductId == product.ProductId &&
                          od.Order.StatusOrderCode == "APPROVED" &&
-                        (od.StatusOrderDetailCode == "APPROVED"))
+                        (od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode == "RETURNED" || od.StatusOrderDetailCode == "PARTIALRETURN")) 
                        .SumAsync(od => od.Quantity - od.ReturnedQuantity);
 
             }
