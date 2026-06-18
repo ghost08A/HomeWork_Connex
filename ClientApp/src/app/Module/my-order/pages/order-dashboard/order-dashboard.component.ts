@@ -9,12 +9,12 @@ import DataSource from 'devextreme/data/data_source';
 import { LoadingService } from '../../../Shared/services/loading.service';
 import { forkJoin, lastValueFrom } from 'rxjs';
 import { MyOrderService } from '../../service/my-order.service';
-import { OrderDetail, OrderSearchRequestModel } from '../../models/order.model';
+import { OrderDetail, OrderSearchRequestModel } from '../../../Shared/models/order.model';
 import CustomStore from 'devextreme/data/custom_store';
 import { LoadOptions } from 'devextreme/data';
 import { Router } from '@angular/router';
 import { ConfirmDialogService } from '../../../Shared/services/confirm-dialog.service';
-import { UpsertOrderPayload } from '../../models/orderDetail.model';
+import { UpsertOrderPayload } from '../../../Shared/models/orderDetail.model';
 // ======================================
 // Data Models
 // ======================================

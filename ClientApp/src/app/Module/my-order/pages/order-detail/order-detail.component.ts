@@ -9,7 +9,7 @@ import { CustomSelectBoxComponent } from '../../../Shared/components/custom-sele
 import { ActionButton, ColumnConfig, PopupButton, valueOption }
   from '../../../Shared/models/typecustom.model';
 import { ErrorEditorState } from '../../../Shared/directives/validate-error.directive';
-import {  OrderActionStatus, OrderDetail, ProductDetail, ProductOrderForm, ReturnFormData, UpsertOrderPayload } from '../../models/orderDetail.model';
+import {  OrderActionStatus, OrderDetail, ProductDetail, ProductOrderForm, ReturnFormData, UpsertOrderPayload } from '../../../Shared/models/orderDetail.model';
 import { MyOrderService } from '../../service/my-order.service';
 import { LoadingService } from '../../../Shared/services/loading.service';
 import { TagComponent } from '../../../Shared/components/tag/tag.component';

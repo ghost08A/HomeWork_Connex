@@ -12,12 +12,12 @@ import {
   UpsertOrderPayload,
   UpsertOrderResponse,
   GetOrderByIdResponse,
-} from '../../Shared/models/orderDetail.model';
+}  from '../../Shared/models/orderDetail.model';
 
 @Injectable({
   providedIn: 'root',
 })
-export class MyOrderService {
+export class AdminOrderService {
   constructor(private http: HttpClient) {}
   private apiUrl = environment.apiUrl;
 
