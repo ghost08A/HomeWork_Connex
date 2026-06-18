@@ -1,1 +1,193 @@
-<p>order-detail works!</p>
+<div class="order-Lists">
+  <div class="order-Lists-header">
+    <h1 class="header-title">รายละเอียดคำสั่งซื้อ (Admin Review)</h1>
+    <hr class="divider" />
+  </div>
+
+  <div class="p-4 mb-4 rounded-lg flex items-center justify-between shadow-sm border" 
+       [ngClass]="{
+         'bg-yellow-50 border-yellow-200 text-yellow-800': currentOrder.statusOrders === 'SUBMIT' || currentOrder.statusOrders === 'WAITAPPROVE',
+         'bg-blue-50 border-blue-200 text-blue-800': currentOrder.statusOrders === 'PENDING',
+         'bg-green-50 border-green-200 text-green-800': currentOrder.statusOrders === 'APPROVED',
+         'bg-red-50 border-red-200 text-red-800': currentOrder.statusOrders === 'REJECTED'
+       }">
+    <div class="flex items-center gap-3">
+      <i class="dx-icon-info text-2xl"></i>
+      <div>
+        <h2 class="text-sm font-bold m-0">สถานะคำสั่งซื้อปัจจุบัน</h2>
+        <span class="text-xl font-black uppercase">{{ currentOrder.statusOrders || 'ไม่ทราบสถานะ' }}</span>
+      </div>
+    </div>
+    <div class="text-sm font-semibold">
+      รหัสบิล: {{ currentOrder.orderId }}
+    </div>
+  </div>
+
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+    <div class="flex flex-wrap items-center gap-4 px-4 py-2 text-sm text-gray-700">
+      <div class="flex items-center gap-1.5"><i class="dx-icon-edit text-gray-600 text-lg"></i><span>แก้ไขจำนวน (ระบุเหตุผล)</span></div>
+      <div class="flex items-center gap-1.5"><i class="dx-icon-close text-red-500 text-lg"></i><span>ไม่อนุมัติ (รายชิ้น)</span></div>
+      <div class="flex items-center gap-1.5"><i class="dx-icon-check text-green-500 text-lg"></i><span>อนุมัติ (รายชิ้น)</span></div>
+    </div>
+  </div>
+
+  @if (loadingService.isLoading() === false) {
+    <custom-data-grid
+      #dataGrid
+      [dataSource]="orderDetails"
+      keyExpr="productId"
+      [columns]="columns"
+      [actionButtons]="actionButtons"
+      actionColumnCaption="จัดการรายการ"
+      [actionColumnWidth]="180"
+      [hasDetailRow]="true"
+      [masterDetailTemplate]="returnDetailTemplate"
+      [expandCondition]="canExpandDetailRow"
+      [showSearchPanel]="false"
+      [pageSize]="20"
+      [remoteOperations]="false"
+    />
+
+    <div class="flex flex-col md:flex-row gap-4 justify-end items-center mt-6 pt-4 border-t border-gray-200">
+      @if (currentOrder.statusOrders !== 'APPROVED' && currentOrder.statusOrders !== 'REJECTED') {
+        
+        <custom-button
+          text="ไม่อนุมัติ (REJECT)"
+          icon="close"
+          type="danger"
+          stylingMode="contained"
+          (onClick)="openRejectPopup(null)"
+        />
+
+        <custom-button
+          text="ส่งให้ผู้ใช้ยืนยันใหม่ (PENDING)"
+          icon="refresh"
+          type="default"
+          stylingMode="contained"
+          (onClick)="onActionOrder('PENDING')"
+        />
+
+        <custom-button
+          text="อนุมัติ (APPROVE)"
+          icon="check"
+          type="success"
+          stylingMode="contained"
+          (onClick)="onActionOrder('APPROVED')"
+        />
+      }
+
+     
+    </div>
+  }
+</div>
+
+<ng-template #returnDetailTemplate let-data>
+  @if (data.returnedQuantity > 0) {
+    <div class="bg-red-50 border border-red-200 shadow-inner">
+      <div class="p-2 bg-red-100">
+        <h3 class="text-sm font-bold text-red-700 mb-0">ข้อมูลการคืนสินค้า</h3>
+      </div>
+      <div class="p-4 flex flex-row gap-8">
+        <div>
+          <span class="text-xs text-red-400 block mb-1">จำนวนที่คืน</span>
+          <p class="font-semibold text-red-600">{{ data.returnedQuantity }} ชิ้น</p>
+        </div>
+        <div>
+          <span class="text-xs text-red-400 block mb-1">วันที่คืน</span>
+          <p class="font-semibold text-gray-700">
+            {{ data.returnedAt | date: 'dd/MMM/yyyy HH:mm' }}
+          </p>
+        </div>
+        <div class="flex-grow">
+          <span class="text-xs text-red-400 block mb-1">สาเหตุที่คืน</span>
+          <p class="font-semibold text-gray-700">{{ data.returnRemark || '-' }}</p>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="p-4 bg-gray-50 text-gray-500 text-sm italic">
+      ไม่มีข้อมูลการคืนสินค้าสำหรับรายการนี้
+    </div>
+  }
+</ng-template>
+
+<ng-template #itemStatusTemplate let-cell>
+  <span [class]="cell.data.statusOrderDetailCode === 'APPROVED' ? 'text-green-600 font-bold' : (cell.data.statusOrderDetailCode === 'REJECTED' ? 'text-red-600 font-bold line-through' : 'text-gray-500')">
+    {{ cell.data.statusOrderDetailCode || 'รอการตรวจสอบ' }}
+  </span>
+</ng-template>
+
+<ng-template #categoryNamesTemplate let-cell>
+  <tag [categories]="cell.data.categoryNames"></tag>
+</ng-template>
+
+<custom-popup
+  [(visible)]="isPopupVisible"
+  title="แก้ไขข้อมูลรายการ (Admin)"
+  [width]="550"
+  [buttons]="popupButtons"
+  [contentTemplate]="productOrderFormTemplate"
+  [closeOnOutsideClick]="false"
+  (onHidden)="onPopupHidden()">
+</custom-popup>
+
+<ng-template #productOrderFormTemplate>
+  <div class="flex flex-col gap-4">
+    @if (selectedProductDetail && loadingService.isLoading() === false) {
+      <div class="p-3 bg-blue-50 text-blue-900 font-semibold rounded border border-blue-100">
+        {{ selectedProductDetail.productName }}
+      </div>
+
+      <div class="flex items-center justify-between px-4 py-2 bg-gray-100 rounded">
+        <span class="text-sm text-gray-700">สต็อกคงเหลือที่มีให้เบิก:</span>
+        <span class="font-bold text-gray-900 text-lg">{{ selectedProductDetail.quantity }} ชิ้น</span>
+      </div>
+
+      <custom-input
+        type="Number"
+        label="แก้ไขจำนวนที่อนุมัติ"
+        placeholder="ระบุจำนวน"
+        [isRequired]="true"
+        [min]="1"
+        [max]="selectedProductDetail.quantity"
+        attributeName="quantity"
+        [componentState]="orderState"
+        [(fieldValue)]="productOrderForm.quantity">
+      </custom-input>
+
+      <custom-input
+        type="TextArea"
+        label="เหตุผลในการแก้ไขจำนวน"
+        placeholder="ระบุสาเหตุที่แก้ไข (แอดมินบังคับกรอก)..."
+        [isRequired]="true"
+        attributeName="remark"
+        [componentState]="orderState"
+        [(fieldValue)]="productOrderForm.remark">
+      </custom-input>
+    }
+  </div>
+</ng-template>
+
+<custom-popup
+  [(visible)]="isRejectPopupVisible"
+  title="ระบุเหตุผลที่ไม่อนุมัติ"
+  [width]="450"
+  [buttons]="rejectPopupButtons"
+  [contentTemplate]="rejectPopupTemplate"
+  [closeOnOutsideClick]="false"
+  (onHidden)="onRejectPopupHidden()">
+</custom-popup>
+
+<ng-template #rejectPopupTemplate>
+  <div class="flex flex-col gap-4">
+    <custom-input
+      type="TextArea"
+      label="เหตุผลที่ไม่อนุมัติ (บังคับกรอก)"
+      placeholder="ระบุเหตุผล..."
+      [isRequired]="true"
+      attributeName="rejectRemark"
+      [componentState]="orderState"
+      [(fieldValue)]="rejectRemark">
+    </custom-input>
+  </div>
+</ng-template>

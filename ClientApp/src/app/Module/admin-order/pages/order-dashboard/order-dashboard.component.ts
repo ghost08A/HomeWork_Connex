@@ -60,7 +60,7 @@ export class OrderDashboardComponent implements OnInit, AfterViewInit {
       stylingMode: 'text',
       onClick: (rowdata) => {
         // 🌟 เปลี่ยน Path ไปหน้า Detail ของฝั่ง Admin
-        this.router.navigate(['/admin-order/order-detail'], {
+        this.router.navigate(['/admin-order/order-admin-detail'], {
           queryParams: {
             orderId: rowdata.orderId,
           },

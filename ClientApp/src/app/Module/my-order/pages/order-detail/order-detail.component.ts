@@ -109,7 +109,7 @@ export class OrderDetailComponent implements OnInit {
   public actionButtons: ActionButton[] = [
     {
       text: '', icon: 'edit', type: 'default', stylingMode: 'text',
-      disabled: () => this.currentOrder.statusOrders === 'APPROVED' || this.currentOrder.statusOrders === 'REJECTED' || this.currentOrder.statusOrders === 'WAITAPPROVE',
+      disabled: () => this.currentOrder.statusOrders === 'APPROVED' || this.currentOrder.statusOrders === 'REJECTED' || this.currentOrder.statusOrders === 'WAITAPPROVE' || this.currentOrder.statusOrders === 'PENDING',
       onClick: (rowData) => this.onEditProductOrder(rowData),
     },
     {
@@ -119,7 +119,7 @@ export class OrderDetailComponent implements OnInit {
     },
     {
       text: '', icon: 'trash', type: 'danger', stylingMode: 'text',
-      disabled: () => this.currentOrder.statusOrders === 'APPROVED' || this.currentOrder.statusOrders === 'REJECTED' || this.currentOrder.statusOrders === 'WAITAPPROVE',
+      disabled: () => this.currentOrder.statusOrders === 'APPROVED' || this.currentOrder.statusOrders === 'REJECTED' || this.currentOrder.statusOrders === 'WAITAPPROVE' || this.currentOrder.statusOrders === 'PENDING',
       onClick: (rowData) => this.onDeleteRow(rowData),
     },
   ];

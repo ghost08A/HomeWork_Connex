@@ -242,7 +242,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
                     _context.LogOrders.Add(new LogOrder
                     {
                         OrderId = order.OrderId,
-                        Action = isCreate ? "CREATE" : "STATUS_CHANGE",
+                        Action = isCreate ? "CREATE" : "UPDATE",
                         StatusOrderCode = order.StatusOrderCode,
                         CreatedAt = order.CreatedAt,
                         CreatedBy = order.CreatedBy,

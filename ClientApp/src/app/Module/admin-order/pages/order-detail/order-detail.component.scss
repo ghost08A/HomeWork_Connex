@@ -1,0 +1,26 @@
+.order-Lists {
+  min-height: 100vh;
+  padding: 24px 32px;
+}
+
+.order-Lists-header{
+    margin-bottom: 16px;
+
+    .header-title{
+        font-size: 30px;
+        font-weight: 700;
+        color: #1F2937;
+        letter-spacing: -0.5px;
+    }
+}
+   .divider{
+        margin-top: 16px;
+        border: none;
+        border-top: 1px solid #D1D5DB; 
+    }
+
+::ng-deep .dx-datagrid-rowsview .dx-master-detail-row > .dx-datagrid-detail-cell {
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+}

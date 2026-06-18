@@ -58,7 +58,7 @@ export interface GetOrderByIdResponse {
   orderDetails: OrderDetail[];
 }
 
-export type OrderActionStatus = 'DRAFT' | 'SUBMIT' | 'WAITAPPROVE'| null;
+export type OrderActionStatus = 'DRAFT' | 'SUBMIT' | 'WAITAPPROVE'| 'PENDING'|'REJECTED'|'APPROVED'|null;
 
 
 export interface ReturnFormData{

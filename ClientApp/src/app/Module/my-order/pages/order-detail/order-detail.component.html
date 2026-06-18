@@ -4,6 +4,29 @@
     <hr class="divider" />
   </div>
 
+  @if (isEditMode && currentOrder.statusOrders) {
+  <div class="p-4 mb-4 rounded-lg flex items-center justify-between shadow-sm border" 
+       [ngClass]="{
+         'bg-gray-50 border-gray-200 text-gray-800': currentOrder.statusOrders === 'DRAFT',
+         'bg-yellow-50 border-yellow-200 text-yellow-800': currentOrder.statusOrders === 'SUBMIT' || currentOrder.statusOrders === 'WAITAPPROVE',
+         'bg-blue-50 border-blue-200 text-blue-800': currentOrder.statusOrders === 'PENDING',
+         'bg-green-50 border-green-200 text-green-800': currentOrder.statusOrders === 'APPROVED',
+         'bg-red-50 border-red-200 text-red-800': currentOrder.statusOrders === 'REJECTED' || currentOrder.statusOrders === 'CANCELLED',
+         'bg-purple-50 border-purple-200 text-purple-800': currentOrder.statusOrders === 'PARTIALRETURN' || currentOrder.statusOrders === 'RETURNED'
+       }">
+    <div class="flex items-center gap-3">
+      <i class="dx-icon-info text-2xl"></i>
+      <div>
+        <h2 class="text-sm font-bold m-0">สถานะคำสั่งซื้อปัจจุบัน</h2>
+        <span class="text-xl font-black uppercase">{{ currentOrder.statusOrders }}</span>
+      </div>
+    </div>
+    <div class="text-sm font-semibold">
+      รหัสบิล: {{ currentOrder.orderId }}
+    </div>
+  </div>
+  }
+
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
     <div class="flex flex-wrap items-center gap-4 px-4 py-2 text-sm text-gray-700">
       <div class="flex items-center gap-1.5">
