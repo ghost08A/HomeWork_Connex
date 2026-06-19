@@ -46,13 +46,11 @@ export class LoginComponent {
     }
     if (isValid) {
       notify({ message: 'กำลังเข้าสู่ระบบ...', type: 'info', displayTime: 2000 });
-      this.authService.login(this.formData, this.loginState).subscribe({
-        next: () => {
+      this.authService.login(this.formData, this.loginState).subscribe((res) => {
+    
           notify({ message: 'เข้าสู่ระบบสำเร็จ!', type: 'success', displayTime: 3000 });
-          setTimeout(() => {
-            this.router.navigate(['/home']);
-          }, 1000);
-        },
+          this.router.navigate(['/home']);
+        
       });
     } else {
       notify({ message: 'กรุณากรอก Username และ Password ให้ครบถ้วน', type: 'error', displayTime: 3000 });

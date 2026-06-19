@@ -361,6 +361,8 @@ namespace HomeWork.Service.ImplementServices.OrderService
                         bool wasAlreadyReturned = orderDetail.StatusOrderDetailCode == "RETURNED"
                                                    || orderDetail.StatusOrderDetailCode == "PARTIALRETURN";
 
+                        shouldLockPrice = wasAlreadyReturned || isReturnAction || oldStatusOrderCode == "APPROVED";
+
                         if (wasAlreadyReturned)
                         {
                             bool isTryingToChangeProtectedFields =
@@ -425,11 +427,18 @@ namespace HomeWork.Service.ImplementServices.OrderService
                         orderDetail.UpdatedAt = timeNow;
                         orderDetail.UpdatedBy = user.UserId;
                     }
-
-                    if (!productPrices.TryGetValue(detailRequest.ProductId, out var unitPrice))
+                    decimal unitPrice;
+                    if (shouldLockPrice)
                     {
-                        error.AddError("pupuperror", $"ไม่พบราคาสินค้า ProductId: {detailRequest.ProductId}");
-                        continue;
+                        unitPrice = orderDetail.UnitPrice; // ใช้ราคาเดิมที่บันทึกไว้แล้ว ไม่แตะ
+                    }
+                    else
+                    {
+                        if (!productPrices.TryGetValue(detailRequest.ProductId, out unitPrice))
+                        {
+                            error.AddError("pupuperror", $"ไม่พบราคาสินค้า ProductId: {detailRequest.ProductId}");
+                            continue;
+                        }
                     }
 
                     orderDetail.ProductId = detailRequest.ProductId;
@@ -659,7 +668,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
         }
         private async Task<string> GenerateOrderIdAsync()
         {
-            var currentYear = DateTime.Now.Year;
+            var currentYear = DateTime.UtcNow.Year;
 
             var runningNumber = await _context.RunningNumbers
                 .FromSqlRaw("SELECT * FROM \"RunningNumber\" WHERE \"Year\" = {0} FOR UPDATE", currentYear)
