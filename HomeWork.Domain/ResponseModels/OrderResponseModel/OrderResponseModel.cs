@@ -10,6 +10,7 @@ namespace HomeWork.Domain.ResponseModels.OrderResponseModel
         public string ProductName { get; set; }
         public string Status { get; set; }
         public decimal Price { get; set; }
+        public int ReturnedQuantity { get; set; }
         public int Quantity { get; set; }
     }
 

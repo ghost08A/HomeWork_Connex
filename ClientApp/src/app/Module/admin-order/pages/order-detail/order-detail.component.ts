@@ -85,6 +85,7 @@ export class OrderDetailComponent implements OnInit {
       // ปิดปุ่มแก้ถ้าออเดอร์ไม่อนุญาตให้แก้แล้ว
       disabled: () =>
         this.currentOrder.statusOrders === 'APPROVED' ||
+        this.currentOrder.statusOrders === 'PENDING' ||
         this.currentOrder.statusOrders === 'REJECTED',
       onClick: (rowData) => this.onEditProductOrder(rowData),
     },

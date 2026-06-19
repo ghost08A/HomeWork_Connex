@@ -61,7 +61,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 Price = p.Price,
                 Detail = p.Detail,
                 Quantity = p.Quantity - p.OrderDetails
-                            .Where(od => od.Order.StatusOrderCode == "APPROVED" && od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode == "RETURNED")
+                            .Where(od => od.Order.StatusOrderCode == "APPROVED" && od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode == "RETURNED"|| od.StatusOrderDetailCode == "PARTIALRETURN")
                             .Sum(od => od.Quantity - od.ReturnedQuantity),
                 ImagePath = p.ImagePath,
                 StatusProductCode = p.StatusProductCode,
@@ -81,12 +81,11 @@ namespace HomeWork.Service.ImplementServices.ProductService
             {
                 query = query.Where(p =>
                     p.StatusProductCode == "ACTIVE" &&
-                    (p.Quantity - p.OrderDetails
-                        .Where(od => od.Order.StatusOrderCode == "APPROVED" &&
-                                    (od.StatusOrderDetailCode == "APPROVED" ||
-                                     od.StatusOrderDetailCode == "RETURNED" ||
-                                     od.StatusOrderDetailCode == "PARTIALRETURN"))
-                        .Sum(od => od.Quantity - od.ReturnedQuantity)) > 0
+                    (p.Quantity - _context.OrderDetails
+                        .Where(od => od.ProductId == p.ProductId)
+                        .Where(OrderDetailExtensions.IsCountedAgainstStock)
+                        .Sum(od => od.Quantity - od.ReturnedQuantity) 
+                        ) > 0
                 );
             }
             var products = await query
@@ -136,10 +135,10 @@ namespace HomeWork.Service.ImplementServices.ProductService
                     Description = p.Detail,
                     ImagePath = p.ImagePath,
                     Price = p.Price,
-                    Quantity = p.Quantity - p.OrderDetails
-                      .Where(od => od.Order.StatusOrderCode == "APPROVED" &&
-                            (od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode =="RETURNED" || od.StatusOrderDetailCode == "PARTIALRETURN"))
-                      .Sum(od => od.Quantity - od.ReturnedQuantity),
+                    Quantity = p.Quantity - _context.OrderDetails
+                        .Where(od => od.ProductId == p.ProductId)
+                        .Where(OrderDetailExtensions.IsCountedAgainstStock)
+                        .Sum(od => od.Quantity - od.ReturnedQuantity),
                     CategoryNames =p.ProductCategories
                         .Select(pc=> pc.Category.CategoryName).ToList()
                 })
@@ -318,10 +317,9 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 if (product == null) error.AddError("productId", "ไม่พบข้อมูลสินค้า");
                 if (request.updateAt.HasValue && request.updateAt < product.UpdatedAt)
                     error.AddError("เวอร์ชั่นไม่ตรงกันกรุณาลองใหม่อีกครั้ง");
-                bookedQuantity = await _context.OrderDetails
-                       .Where(od => od.ProductId == product.ProductId &&
-                         od.Order.StatusOrderCode == "APPROVED" &&
-                        (od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode == "RETURNED" || od.StatusOrderDetailCode == "PARTIALRETURN")) 
+                    bookedQuantity = await _context.OrderDetails
+                       .Where(od => od.ProductId == product.ProductId)
+                       .WhereCountedAgainstStock()
                        .SumAsync(od => od.Quantity - od.ReturnedQuantity);
 
             }

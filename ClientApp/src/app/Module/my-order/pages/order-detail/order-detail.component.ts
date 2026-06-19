@@ -124,19 +124,21 @@ export class OrderDetailComponent implements OnInit {
     },
   ];
 
+  @ViewChild('itemStatusTemplate', { static: true }) itemStatusTemplate!: TemplateRef<any>;
+
   // ======================================
   // Lifecycle
   // ======================================
   ngOnInit(): void {
     this.columns = [
-    { dataField: 'sequence',              caption: 'ลำดับ',         dataType: 'number', alignment: 'center', width: 80 },
-    { dataField: 'productName',           caption: 'ชื่อสินค้า',    alignment: 'left' },
-    { dataField: 'description',           caption: 'รายละเอียด',    alignment: 'left', width: 200 },
-    { dataField: 'categoryNames',         caption: 'ประเภทสินค้า',  alignment: 'left', cellTemplate: this.categoryNamesTemplate },
-    { dataField: 'quantity',              caption: 'จำนวน',          alignment: 'center', width: 80 },
-    { dataField: 'statusOrderDetailCode', caption: 'สถานะ',          alignment: 'center', width: 120 },
-    { dataField: 'remark',                caption: 'หมายเหตุ',       alignment: 'left', width: 200 },
-    ]
+      { dataField: 'sequence',              caption: 'ลำดับ',         dataType: 'number', alignment: 'center', width: 80 },
+      { dataField: 'productName',           caption: 'ชื่อสินค้า',    alignment: 'left' },
+      { dataField: 'description',           caption: 'รายละเอียด',    alignment: 'left', width: 200 },
+      { dataField: 'categoryNames',         caption: 'ประเภทสินค้า',  alignment: 'left', cellTemplate: this.categoryNamesTemplate },
+      { dataField: 'quantity',              caption: 'จำนวน',          alignment: 'center', width: 80 },
+      { dataField: 'statusOrderDetailCode', caption: 'สถานะ',          alignment: 'center', cellTemplate: this.itemStatusTemplate, width: 140 },
+      { dataField: 'remark',                caption: 'หมายเหตุ',       alignment: 'left', width: 200 },
+    ];
     this.route.queryParams.subscribe((params) => {
       if (params['orderId']) {
         // โหมดแก้ไข — มี orderId มา

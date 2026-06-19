@@ -130,6 +130,19 @@
   }
 </div>
 
+<ng-template #itemStatusTemplate let-cell>
+  <div class="px-2 py-1 rounded-full text-xs font-semibold inline-block"
+       [ngClass]="{
+         'bg-gray-100 text-gray-800 border border-gray-200': !cell.data.statusOrderDetailCode,
+         'bg-green-100 text-green-800 border border-green-200': cell.data.statusOrderDetailCode === 'APPROVED' || cell.data.statusOrderDetailCode === 'Approved',
+         'bg-red-100 text-red-800 border border-red-200': cell.data.statusOrderDetailCode === 'REJECTED' || cell.data.statusOrderDetailCode === 'Rejected',
+         'bg-yellow-100 text-yellow-800 border border-yellow-200': cell.data.statusOrderDetailCode === 'PARTIALRETURN' || cell.data.statusOrderDetailCode === 'PartialReturn',
+         'bg-purple-100 text-purple-800 border border-purple-200': cell.data.statusOrderDetailCode === 'RETURNED' || cell.data.statusOrderDetailCode === 'Returned'
+       }">
+    {{ cell.data.statusOrderDetailCode || 'รอการตรวจสอบ' }}
+  </div>
+</ng-template>
+
 <ng-template #categoryNamesTemplate let-cell>
   <tag [categories]="cell.data.categoryNames"></tag>
 </ng-template>
