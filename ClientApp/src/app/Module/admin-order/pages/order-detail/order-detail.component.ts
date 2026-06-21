@@ -19,6 +19,7 @@ import { LoadingService } from '../../../Shared/services/loading.service';
 import { TagComponent } from '../../../Shared/components/tag/tag.component';
 import { ConfirmDialogService } from '../../../Shared/services/confirm-dialog.service';
 import notify from 'devextreme/ui/notify';
+import { orderDetailStatus, orderDetailStatusLabel, orderStatus, orderStatusLabel } from '../../../Shared/enum/AllStatus';
 
 @Component({
   selector: 'order-detail',
@@ -37,6 +38,10 @@ import notify from 'devextreme/ui/notify';
 export class OrderDetailComponent implements OnInit {
   public loadingService = inject(LoadingService);
   private confirm = inject(ConfirmDialogService);
+  public orderStatus = orderStatus;
+  public orderDetailStatus = orderDetailStatus;
+  public orderStatusLabel: Record<string, string> = orderStatusLabel;
+  public orderDetailStatusLabel: Record<string, string> = orderDetailStatusLabel;
   public orderState = new ErrorEditorState();
 
   public currentOrderId: string | null = null;
@@ -84,9 +89,9 @@ export class OrderDetailComponent implements OnInit {
       stylingMode: 'text',
       // ปิดปุ่มแก้ถ้าออเดอร์ไม่อนุญาตให้แก้แล้ว
       disabled: () =>
-        this.currentOrder.statusOrders === 'APPROVED' ||
-        this.currentOrder.statusOrders === 'PENDING' ||
-        this.currentOrder.statusOrders === 'REJECTED',
+        this.currentOrder.statusOrders === orderStatus.APPROVED ||
+        this.currentOrder.statusOrders === orderStatus.PENDING ||
+        this.currentOrder.statusOrders === orderStatus.REJECTED,
       onClick: (rowData) => this.onEditProductOrder(rowData),
     },
     {
@@ -96,8 +101,8 @@ export class OrderDetailComponent implements OnInit {
       stylingMode: 'text',
       // ปุ่ม REJECT Item
       disabled: (rowData) =>
-        rowData.statusOrderDetailCode === 'REJECTED' ||
-        this.currentOrder.statusOrders === 'APPROVED',
+        rowData.statusOrderDetailCode === orderDetailStatus.REJECTED ||
+        this.currentOrder.statusOrders === orderStatus.APPROVED,
       onClick: (rowData) => this.openRejectPopup(rowData),
     },
     {
@@ -107,9 +112,9 @@ export class OrderDetailComponent implements OnInit {
       stylingMode: 'text',
       // ปุ่ม APPROVE Item (เผื่อเปลี่ยนใจจากที่เคยกด Reject ไว้)
       disabled: (rowData) =>
-        rowData.statusOrderDetailCode === 'APPROVED' ||
-        this.currentOrder.statusOrders === 'APPROVED',
-      onClick: (rowData) => this.onChangeItemStatus(rowData, 'APPROVED'),
+        rowData.statusOrderDetailCode === orderDetailStatus.APPROVED ||
+        this.currentOrder.statusOrders === orderStatus.APPROVED,
+      onClick: (rowData) => this.onChangeItemStatus(rowData, orderDetailStatus.APPROVED),
     },
   ];
 
@@ -169,13 +174,13 @@ export class OrderDetailComponent implements OnInit {
     return rowData.returnedQuantity > 0;
   }
 
-  public onChangeItemStatus(rowData: OrderDetail, status: string): void {
+  public onChangeItemStatus(rowData: OrderDetail, status: orderDetailStatus): void {
     const targetIndex = this.orderDetails.findIndex((x) => x.productId === rowData.productId);
     if (targetIndex !== -1) {
       this.orderDetails[targetIndex].statusOrderDetailCode = status;
       notify(
         `เปลี่ยนสถานะรายการเป็น ${status} แล้ว`,
-        status === 'APPROVED' ? 'success' : 'warning',
+        status === orderDetailStatus.APPROVED ? 'success' : 'warning',
         2000,
       );
     }
@@ -313,7 +318,7 @@ export class OrderDetailComponent implements OnInit {
       // Reject Specific Item
       const targetIndex = this.orderDetails.findIndex((x) => x.productId === this.rejectingProductId);
       if (targetIndex !== -1) {
-        this.orderDetails[targetIndex].statusOrderDetailCode = 'REJECTED';
+        this.orderDetails[targetIndex].statusOrderDetailCode = orderDetailStatus.REJECTED;
         this.orderDetails[targetIndex].remark = this.rejectRemark;
         notify('เปลี่ยนสถานะรายการเป็น REJECTED และระบุเหตุผลแล้ว', 'warning', 2000);
       }
@@ -337,27 +342,27 @@ export class OrderDetailComponent implements OnInit {
     this.originalOrderDetails = this.originalOrderDetails.map((od) => {
       return {
         ...od,
-        statusOrderDetailCode: 'REJECTED',
+        statusOrderDetailCode: orderDetailStatus.REJECTED,
         remark: this.rejectRemark
       };
     });
     
     // บันทึกออเดอร์ทันที โดยใช้ original data
-    this.saveOrder('REJECTED', true);
+    this.saveOrder(orderStatus.REJECTED, true);
   }
 
-  public async onActionOrder(actionType: 'PENDING' | 'APPROVED') {
+  public async onActionOrder(actionType: orderStatus.PENDING | orderStatus.APPROVED) {
     let confirmConfig: any = {};
 
     // 🌟 4. ตั้งค่าข้อความแจ้งเตือนแยกตามการกระทำ
-    if (actionType === 'PENDING') {
+    if (actionType === orderStatus.PENDING) {
       confirmConfig = {
         title: 'ส่งให้ผู้ใช้ยืนยัน (PENDING)?',
         message: 'ระบบจะส่งออเดอร์ที่ถูกแก้ไขให้ผู้ใช้งานยืนยันอีกครั้ง',
         confirmText: 'ส่ง PENDING',
         confirmType: 'warning',
       };
-    } else if (actionType === 'APPROVED') {
+    } else if (actionType === orderStatus.APPROVED) {
       confirmConfig = {
         title: 'อนุมัติคำสั่งซื้อ?',
         message: 'ระบบจะอนุมัติออเดอร์ และตัดสต็อกตามข้อมูลที่แก้ไขล่าสุด',
@@ -391,8 +396,8 @@ export class OrderDetailComponent implements OnInit {
         quantity: item.quantity,
         // ถ้าอนุมัติทั้งออเดอร์ และ Item ยังไม่มีสถานะ ก็จับเป็น APPROVED ให้หมด
         statusOrderDetailCode:
-          targetStatus === 'APPROVED' && !item.statusOrderDetailCode
-            ? 'APPROVED'
+          targetStatus === orderStatus.APPROVED && !item.statusOrderDetailCode
+            ? orderDetailStatus.APPROVED
             : item.statusOrderDetailCode,
         remark: item.remark,
         returnedQuantity: item.returnedQuantity,
@@ -411,4 +416,5 @@ export class OrderDetailComponent implements OnInit {
   async onCancel() {
     this.router.navigate(['/admin-order/order-admin-dashboard']);
   }
+
 }

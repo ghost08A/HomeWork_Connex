@@ -20,6 +20,7 @@ import { CommonModule } from '@angular/common';
 
 import { MyOrderService } from '../../../my-order/service/my-order.service';
 import { AdminOrderService } from '../../../admin-order/service/admin-order.service';
+import { orderDetailStatus, orderDetailStatusLabel, orderStatus, orderStatusLabel } from '../../enum/AllStatus';
 
 @Component({
   selector: 'shared-order-dashboard',
@@ -40,6 +41,10 @@ export class SharedOrderDashboardComponent implements OnInit, AfterViewInit {
 
   public loadingService = inject(LoadingService);
   private confirm = inject(ConfirmDialogService);
+  public orderStatus = orderStatus;
+  public orderDetailStatus = orderDetailStatus;
+  public orderStatusLabel: Record<string, string> = orderStatusLabel;
+  public orderDetailStatusLabel: Record<string, string> = orderDetailStatusLabel;
   
   constructor(
     private router: Router,
@@ -111,7 +116,7 @@ export class SharedOrderDashboardComponent implements OnInit, AfterViewInit {
           icon: 'checkmarkcircle',
           type: 'success',
           stylingMode: 'text',
-          disabled: (rowData) => rowData.statusOrder !== 'PENDING',
+          disabled: (rowData) => rowData.statusOrder !== orderStatus.PENDING,
           onClick: (rowdata) => this.onSendToApprove(rowdata.orderId),
         },
         {
@@ -131,9 +136,9 @@ export class SharedOrderDashboardComponent implements OnInit, AfterViewInit {
           type: 'danger',
           stylingMode: 'text',
           disabled: (rowData) =>
-            rowData.statusOrder === 'APPROVED' ||
-            rowData.statusOrder === 'REJECTED' ||
-            rowData.statusOrder === 'WAITAPPROVE',
+            rowData.statusOrder === orderStatus.APPROVED ||
+            rowData.statusOrder === orderStatus.REJECTED ||
+            rowData.statusOrder === orderStatus.WAITAPPROVE,
           onClick: (rowdata) => this.onDeleteOrder(rowdata.orderId)
         },
       ];
@@ -151,7 +156,10 @@ export class SharedOrderDashboardComponent implements OnInit, AfterViewInit {
     }).subscribe({
       next: (res: any) => {
         this.productOptions = res.products || [];
-        this.statusOptions = res.statusOrders || [];
+        this.statusOptions = (res.statusOrders || []).map((s: any) => ({
+          ...s,
+          name: this.orderStatusLabel[s.id] || s.name
+        }));
         this.buildDataSource();
       },
       error: (err) => console.error('API Error:', err),
@@ -235,7 +243,7 @@ export class SharedOrderDashboardComponent implements OnInit, AfterViewInit {
         const payload: UpsertOrderPayload = {
           orderId: order.orderId,
           updatedAt: order.updatedAt,
-          statusOrders: 'WAITAPPROVE',
+          statusOrders: orderStatus.WAITAPPROVE,
           orderDetails: order.orderDetails
             .sort((a, b) => a.sequence - b.sequence)
             .map((item, index) => ({
@@ -277,4 +285,5 @@ export class SharedOrderDashboardComponent implements OnInit, AfterViewInit {
       },
     })
   }
+
 }

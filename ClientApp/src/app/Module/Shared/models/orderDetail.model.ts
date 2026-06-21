@@ -1,3 +1,5 @@
+import { orderStatus } from "../enum/AllStatus";
+
 export class ProductOrderForm {
   productId: number | null = null;  // null = Create, มีค่า = Update
   quantity: number | null = null;
@@ -58,7 +60,7 @@ export interface GetOrderByIdResponse {
   orderDetails: OrderDetail[];
 }
 
-export type OrderActionStatus = 'DRAFT' | 'SUBMIT' | 'WAITAPPROVE'| 'PENDING'|'REJECTED'|'APPROVED'|null;
+export type OrderActionStatus = `${orderStatus}` | null;
 
 
 export interface ReturnFormData{

@@ -12,6 +12,8 @@ using HomeWork.Domain.Share.Errors;
 using HomeWork.Service.Helper;
 using Microsoft.EntityFrameworkCore;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Threading.Tasks;
+using HomeWork.Domain.Enums;
 
 
 namespace HomeWork.Service.ImplementServices.ProductService
@@ -61,7 +63,7 @@ namespace HomeWork.Service.ImplementServices.ProductService
                 Price = p.Price,
                 Detail = p.Detail,
                 Quantity = p.Quantity - p.OrderDetails
-                            .Where(od => od.Order.StatusOrderCode == "APPROVED" && od.StatusOrderDetailCode == "APPROVED" || od.StatusOrderDetailCode == "RETURNED"|| od.StatusOrderDetailCode == "PARTIALRETURN")
+                            .Where(od => od.Order.StatusOrderCode == EnumOrderStatus.APPROVED && (od.StatusOrderDetailCode == EnumOrderDetailStatus.APPROVED || od.StatusOrderDetailCode == EnumOrderDetailStatus.RETURNED || od.StatusOrderDetailCode == EnumOrderDetailStatus.PARTIALRETURN))
                             .Sum(od => od.Quantity - od.ReturnedQuantity),
                 ImagePath = p.ImagePath,
                 StatusProductCode = p.StatusProductCode,

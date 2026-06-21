@@ -1,5 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
-import { DxValidationGroupComponent,DxValidatorModule,} from 'devextreme-angular';
+import { Component } from '@angular/core';
 import notify from 'devextreme/ui/notify';
 import { LoginRequestModel } from '../../models/authentication.model';
 import { AuthService } from '../../service/auth.service';

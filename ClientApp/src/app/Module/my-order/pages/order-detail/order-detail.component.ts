@@ -16,6 +16,7 @@ import { TagComponent } from '../../../Shared/components/tag/tag.component';
 import { Router } from '@angular/router';
 import { ConfirmDialogService } from '../../../Shared/services/confirm-dialog.service';
 import notify from 'devextreme/ui/notify';
+import { orderDetailStatus, orderDetailStatusLabel, orderStatus, orderStatusLabel } from '../../../Shared/enum/AllStatus';
 
 @Component({
   selector: 'order-detail',
@@ -35,6 +36,10 @@ import notify from 'devextreme/ui/notify';
 export class OrderDetailComponent implements OnInit {
   public loadingService = inject(LoadingService);
   private confirm = inject(ConfirmDialogService);
+  public orderStatus = orderStatus;
+  public orderDetailStatus = orderDetailStatus;
+  public orderStatusLabel: Record<string, string> = orderStatusLabel;
+  public orderDetailStatusLabel: Record<string, string> = orderDetailStatusLabel;
 
   public orderState = new ErrorEditorState();
 
@@ -109,17 +114,17 @@ export class OrderDetailComponent implements OnInit {
   public actionButtons: ActionButton[] = [
     {
       text: '', icon: 'edit', type: 'default', stylingMode: 'text',
-      disabled: () => this.currentOrder.statusOrders === 'APPROVED' || this.currentOrder.statusOrders === 'REJECTED' || this.currentOrder.statusOrders === 'WAITAPPROVE' || this.currentOrder.statusOrders === 'PENDING',
+      disabled: () => this.currentOrder.statusOrders === orderStatus.APPROVED || this.currentOrder.statusOrders === orderStatus.REJECTED || this.currentOrder.statusOrders === orderStatus.WAITAPPROVE || this.currentOrder.statusOrders === orderStatus.PENDING,
       onClick: (rowData) => this.onEditProductOrder(rowData),
     },
     {
       text: '', icon: 'return', type: 'normal', stylingMode: 'text',
-      disabled: () => this.currentOrder.statusOrders != 'APPROVED',
+      disabled: () => this.currentOrder.statusOrders !== orderStatus.APPROVED,
       onClick: (rowData) => this.openReturnPopup(rowData),
     },
     {
       text: '', icon: 'trash', type: 'danger', stylingMode: 'text',
-      disabled: () => this.currentOrder.statusOrders === 'APPROVED' || this.currentOrder.statusOrders === 'REJECTED' || this.currentOrder.statusOrders === 'WAITAPPROVE' || this.currentOrder.statusOrders === 'PENDING',
+      disabled: () => this.currentOrder.statusOrders === orderStatus.APPROVED || this.currentOrder.statusOrders === orderStatus.REJECTED || this.currentOrder.statusOrders === orderStatus.WAITAPPROVE || this.currentOrder.statusOrders === orderStatus.PENDING,
       onClick: (rowData) => this.onDeleteRow(rowData),
     },
   ];

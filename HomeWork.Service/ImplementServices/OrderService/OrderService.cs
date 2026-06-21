@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using HomeWork.Domain.Enums;
 
 namespace HomeWork.Service.ImplementServices.OrderService
 {
@@ -249,7 +250,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
                 order.StatusOrderCode = request.StatusOrders;
                 if (isStatusChanged) //ทำlogแค่ตอนอัพเดตสถานะ
                 {
-                    if (request.StatusOrders is "APPROVED" or "REJECTED" or "PENDING" && !isAdmin)
+                    if (request.StatusOrders is EnumOrderStatus.APPROVED or EnumOrderStatus.REJECTED or EnumOrderStatus.PENDING && !isAdmin)
                     {
                         error.AddError("popuperror", "แกไม่มีสิทธ์");
                     }
@@ -318,7 +319,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
 
                     if (isNewDetail)
                     {
-                        if (oldStatusOrderCode is "APPROVED" or "REJECTED" or "WAITAPPROVE" or "PENDING")
+                        if (oldStatusOrderCode is EnumOrderStatus.APPROVED or EnumOrderStatus.REJECTED or EnumOrderStatus.WAITAPPROVE or EnumOrderStatus.PENDING)
                         {
                             error.AddError("popuperror", "ห้ามแก้ไขสินค้าในออเดอร์นี้");
                             error.ThrowIfError();
@@ -330,7 +331,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
                             CreatedAt = timeNow,
                             CreatedBy = user.UserId
                         };
-                        orderDetail.StatusOrderDetailCode = "APPROVED";
+                        orderDetail.StatusOrderDetailCode = EnumOrderDetailStatus.APPROVED;
                         if (detailRequest.ReturnedQuantity > 0)
                         {
                             error.AddError("ReturnedQuantity", "ไม่สามารถคืนสินค้าที่เพิ่งเพิ่มใหม่ได้");
@@ -345,23 +346,23 @@ namespace HomeWork.Service.ImplementServices.OrderService
 
                         if (orderDetail == null)
                         {
-                            error.AddError("popuperror", $"ไม่พบรายการสินค้า ID: {detailRequest.OrderDetailId}");
-                            continue;
+                            error.AddError("popuperror", $"ไม่พบรายการสินค้า");
+                            error.ThrowIfError();
                         }
 
                         // ดูว่าค่าคืนเปลี่ยนมั้ย
                         bool isReturnedQuantityChanged = orderDetail.ReturnedQuantity != detailRequest.ReturnedQuantity;
 
                         // ดูว่าที่เข้ามาเป็นการคืนจริงมั้ย
-                        bool isReturnAction = oldStatusOrderCode == "APPROVED"
+                        bool isReturnAction = oldStatusOrderCode == EnumOrderStatus.APPROVED
                                                && isReturnedQuantityChanged
                                                && detailRequest.ReturnedQuantity > 0;
 
                         // detail นี้เคยถูกคืนไปแล้วอดีต
-                        bool wasAlreadyReturned = orderDetail.StatusOrderDetailCode == "RETURNED"
-                                                   || orderDetail.StatusOrderDetailCode == "PARTIALRETURN";
+                        bool wasAlreadyReturned = orderDetail.StatusOrderDetailCode == EnumOrderDetailStatus.RETURNED
+                                                   || orderDetail.StatusOrderDetailCode == EnumOrderDetailStatus.PARTIALRETURN;
 
-                        shouldLockPrice = wasAlreadyReturned || isReturnAction || oldStatusOrderCode == "APPROVED";
+                        shouldLockPrice = wasAlreadyReturned || isReturnAction || oldStatusOrderCode == EnumOrderStatus.APPROVED;
 
                         if (wasAlreadyReturned)
                         {
@@ -373,8 +374,8 @@ namespace HomeWork.Service.ImplementServices.OrderService
 
                             if (isTryingToChangeProtectedFields)
                             {
-                                error.AddError("popuperror", $"ไม่สามารถแก้ไขรายละเอียดสินค้าที่คืนแล้วได้ (OrderDetailId: {orderDetail.OrderDetailId})");
-                                continue;
+                                error.AddError("popuperror", $"ไม่สามารถแก้ไขรายละเอียดสินค้าที่คืน");
+                                error.ThrowIfError();
                             }
                         }
 
@@ -419,7 +420,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
                             orderDetail.ReturnedAt = null;
                         }
 
-                        if (request.StatusOrders != "APPROVED" && detailRequest.ReturnedQuantity > 0)
+                        if (request.StatusOrders != EnumOrderStatus.APPROVED && detailRequest.ReturnedQuantity > 0)
                         {
                             error.AddError("popuperror", "ไม่สามารถคืนสิาค้าในออเดอร์ที่ยังไม่อนุมัติได้");
                         }
@@ -551,7 +552,7 @@ namespace HomeWork.Service.ImplementServices.OrderService
                 }
 
 
-                if (order.StatusOrderCode == "APPROVED" || order.StatusOrderCode == "REJECTED")
+                if (order.StatusOrderCode == EnumOrderStatus.APPROVED || order.StatusOrderCode == EnumOrderStatus.REJECTED)
                 {
                     error.AddError("status", "ไม่สามารถลบออเดอร์ที่อนุมัติหรือปฏิเสธแล้วได้");
                     error.ThrowIfError();
